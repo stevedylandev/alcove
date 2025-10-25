@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@evolu/common": "^6.0.1-preview.19",
+    "@evolu/react": "^9.0.1-preview.4",
+    "@evolu/react-web": "^1.0.1-preview.3",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/vite": "^4.1.16",
     "class-variance-authority": "^0.7.1",
