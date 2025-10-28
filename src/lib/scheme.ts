@@ -34,7 +34,7 @@ export const Schema = {
 		feedId: RSSFeedId,
 		title: NonEmptyString1000,
 		link: NonEmptyString1000,
-		content: nullOr(NonEmptyString1000),
+		content: nullOr(NonEmptyString),
 		author: nullOr(NonEmptyString200),
 	},
 	readStatus: {

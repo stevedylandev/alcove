@@ -20,6 +20,10 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { useQuery } from "@evolu/react";
 import { allFeedsQuery, allPostsQuery } from "@/lib/evolu";
+import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 
 function Dashboard() {
 	const [selectedFeedId, setSelectedFeedId] = React.useState<string | null>(
@@ -31,6 +35,7 @@ function Dashboard() {
 
 	const allFeeds = useQuery(allFeedsQuery);
 	const allPosts = useQuery(allPostsQuery);
+	console.log(allPosts);
 
 	const selectedFeed = selectedFeedId
 		? allFeeds.find((f) => f.id === selectedFeedId)
@@ -56,8 +61,8 @@ function Dashboard() {
 					selectedPostId={selectedPostId}
 					onPostSelect={setSelectedPostId}
 				/>
-				<SidebarInset>
-					<header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+				<SidebarInset className="flex flex-col h-screen overflow-hidden">
+					<header className="bg-background flex shrink-0 items-center gap-2 border-b p-4">
 						<SidebarTrigger className="-ml-1" />
 						<Separator
 							orientation="vertical"
@@ -87,9 +92,9 @@ function Dashboard() {
 							</BreadcrumbList>
 						</Breadcrumb>
 					</header>
-					<div className="flex flex-1 flex-col gap-4 p-4">
+					<div className="flex flex-1 flex-col gap-4 p-4 overflow-y-auto">
 						{selectedPost ? (
-							<div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+							<div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-8">
 								<div className="flex flex-col gap-3">
 									<h1 className="text-3xl font-bold tracking-tight">
 										{selectedPost.title}
@@ -114,18 +119,21 @@ function Dashboard() {
 									</div>
 								</div>
 								<Separator />
-								<div className="prose prose-sm dark:prose-invert max-w-none">
-									{selectedPost.content ? (
-										<div
-											dangerouslySetInnerHTML={{ __html: selectedPost.content }}
-										/>
-									) : (
-										<p className="text-muted-foreground">
-											No content available. Click "Open Original" to read the
-											full article.
-										</p>
-									)}
-								</div>
+								{selectedPost.content ? (
+									<div className="prose prose-gray dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-a:text-primary prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-blockquote:text-muted-foreground prose-li:text-foreground space-y-4">
+										<ReactMarkdown
+											remarkPlugins={[remarkGfm]}
+											rehypePlugins={[rehypeRaw, rehypeSanitize]}
+										>
+											{selectedPost.content}
+										</ReactMarkdown>
+									</div>
+								) : (
+									<p className="text-muted-foreground">
+										No content available. Click "Open Original" to read the full
+										article.
+									</p>
+								)}
 							</div>
 						) : (
 							<div className="flex flex-col items-center justify-center h-full text-center gap-4">

@@ -146,6 +146,7 @@ export function AppSidebar({
 							: post.link?.[0] || post.id
 						: post.link || post.id,
 					feedId: result.value.id,
+					content: post.content || "",
 				});
 			}
 			setUrlInput("");
