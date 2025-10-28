@@ -1,4 +1,3 @@
-import { useEvolu } from "../main";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
 	Breadcrumb,
@@ -16,8 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 
 function Dashboard() {
-	const { insert, update } = useEvolu();
-
 	return (
 		<main className="min-h-screen w-full items-center justify-center flex-col flex gap-2">
 			<SidebarProvider
