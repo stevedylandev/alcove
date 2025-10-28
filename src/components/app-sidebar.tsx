@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Command, Plus, RotateCw } from "lucide-react";
+import {
+	ChartNoAxesColumnIcon,
+	ChartNoAxesGanttIcon,
+	CircleSlash2,
+	Command,
+	Plus,
+	RotateCw,
+} from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import { NavFeeds } from "@/components/nav-feeds";
@@ -78,9 +85,8 @@ export function AppSidebar({
 
 	// Get posts based on selected feed
 	const allPosts = useQuery(allPostsQuery);
-	const feedPosts = selectedFeedId
-		? useQuery(postsByFeedQuery(selectedFeedId))
-		: allPosts;
+	const feedPostsQuery = useQuery(postsByFeedQuery(selectedFeedId || ""));
+	const feedPosts = selectedFeedId ? feedPostsQuery : allPosts;
 
 	// Filter posts by search query
 	const filteredPosts = React.useMemo(() => {
@@ -168,7 +174,7 @@ export function AppSidebar({
 								<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
 									<a href="#">
 										<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-											<Command className="size-4" />
+											<ChartNoAxesGanttIcon className="size-4" />
 										</div>
 										<div className="grid flex-1 text-left text-sm leading-tight">
 											<span className="truncate font-medium">Alcove</span>
