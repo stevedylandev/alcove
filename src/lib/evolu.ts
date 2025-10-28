@@ -15,6 +15,23 @@ export const allFeedsQuery = evolu.createQuery((db) =>
 	db.selectFrom("rssFeed").selectAll(),
 );
 
+export const postsByFeedQuery = (feedId: string) =>
+	evolu.createQuery((db) =>
+		db
+			.selectFrom("rssPost")
+			.selectAll()
+			.where("feedId", "=", feedId as any)
+			.orderBy("id", "desc"),
+	);
+
+export const allPostsQuery = evolu.createQuery((db) =>
+	db.selectFrom("rssPost").selectAll().orderBy("id", "desc"),
+);
+
+export const feedsByCategoryQuery = evolu.createQuery((db) =>
+	db.selectFrom("rssFeed").selectAll().orderBy("category", "asc"),
+);
+
 export function reset() {
 	evolu.resetAppOwner();
 }
