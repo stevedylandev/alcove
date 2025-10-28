@@ -45,6 +45,37 @@ function Dashboard() {
 		? allPosts.find((p) => p.id === selectedPostId)
 		: null;
 
+	// Get base URL from the post link to fix relative image paths
+	const getBaseUrl = React.useCallback((link: string | null) => {
+		if (!link) return "";
+		try {
+			const url = new URL(link);
+			return `${url.protocol}//${url.host}`;
+		} catch (e) {
+			return "";
+		}
+	}, []);
+
+	// Custom components for ReactMarkdown to fix image URLs
+	const markdownComponents = React.useMemo(
+		() => ({
+			img: ({ node, src, alt, ...props }: any) => {
+				let fixedSrc = src;
+
+				// If src starts with / and we have a base URL from the post link
+				if (src?.startsWith("/") && selectedPost?.link) {
+					const baseUrl = getBaseUrl(selectedPost.link);
+					if (baseUrl) {
+						fixedSrc = `${baseUrl}${src}`;
+					}
+				}
+
+				return <img src={fixedSrc} alt={alt} {...props} />;
+			},
+		}),
+		[selectedPost?.link, getBaseUrl],
+	);
+
 	return (
 		<main className="min-h-screen w-full">
 			<SidebarProvider
@@ -92,7 +123,7 @@ function Dashboard() {
 							</BreadcrumbList>
 						</Breadcrumb>
 					</header>
-					<div className="flex flex-1 flex-col gap-4 p-4 overflow-y-auto">
+					<div className="h-full flex flex-1 flex-col gap-4 p-4 pb-12 overflow-y-auto">
 						{selectedPost ? (
 							<div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-8">
 								<div className="flex flex-col gap-3">
@@ -124,6 +155,7 @@ function Dashboard() {
 										<ReactMarkdown
 											remarkPlugins={[remarkGfm]}
 											rehypePlugins={[rehypeRaw, rehypeSanitize]}
+											components={markdownComponents}
 										>
 											{selectedPost.content}
 										</ReactMarkdown>

@@ -146,7 +146,8 @@ export function AppSidebar({
 							: post.link?.[0] || post.id
 						: post.link || post.id,
 					feedId: result.value.id,
-					content: post.content || "",
+					content:
+						post["content:encoded"] || post.content || "Please open on the web",
 				});
 			}
 			setUrlInput("");
@@ -250,7 +251,7 @@ export function AppSidebar({
 			</Dialog>
 
 			{/* Posts List Panel - Separate from main sidebar */}
-			<div className="bg-sidebar text-sidebar-foreground hidden md:flex h-full w-[320px] flex-col border-r">
+			<div className="bg-sidebar text-sidebar-foreground hidden md:flex overflow-y-scroll h-screen w-[320px] flex-col border-r">
 				<div className="gap-2 border-b p-3 flex flex-col">
 					<div className="flex w-full items-center justify-between">
 						<div className="text-foreground text-sm font-semibold truncate">
