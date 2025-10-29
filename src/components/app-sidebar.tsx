@@ -49,6 +49,7 @@ import {
 } from "@/lib/evolu";
 import { XMLParser } from "fast-xml-parser";
 import { useQuery } from "@evolu/react";
+import { COMMON_FEED_PATHS } from "@/lib/feed-discovery";
 const parser = new XMLParser();
 
 // This is sample data
@@ -98,18 +99,75 @@ export function AppSidebar({
 
 	async function addFeed() {
 		try {
-			let xmlData: string;
-			try {
-				// Try to fetch directly first
-				const xmlFetch = await fetch(urlInput);
-				xmlData = await xmlFetch.text();
-			} catch (corsError) {
-				// Fall back to AllOrigins if CORS error occurs
-				console.log(corsError);
-				const xmlFetch = await fetch(
-					`https://api.allorigins.win/raw?url=${urlInput}`,
-				);
-				xmlData = await xmlFetch.text();
+			// Try to discover feeds if the URL doesn't look like a direct feed URL
+			let feedUrl = urlInput;
+			const looksLikeFeedUrl =
+				urlInput.includes("/feed") ||
+				urlInput.includes("/rss") ||
+				urlInput.includes(".xml") ||
+				urlInput.includes("/atom");
+
+			let xmlData: string | null = null;
+
+			if (!looksLikeFeedUrl) {
+				// Try common feed paths using CORS proxy
+				const urlObj = new URL(urlInput);
+				const origin = urlObj.origin;
+
+				console.log("Trying to discover feed from:", origin);
+
+				for (const path of COMMON_FEED_PATHS) {
+					const testUrl = `${origin}${path}`;
+					console.log("Testing:", testUrl);
+
+					try {
+						// Use CORS proxy to avoid CORS issues
+						const response = await fetch(
+							`https://corsproxy.io/?url=${encodeURIComponent(testUrl)}`,
+						);
+
+						if (response.ok) {
+							const text = await response.text();
+							// Quick check if it looks like XML
+							if (
+								text.trim().startsWith("<?xml") ||
+								text.includes("<rss") ||
+								text.includes("<feed")
+							) {
+								xmlData = text;
+								feedUrl = testUrl;
+								console.log("Found feed at:", testUrl);
+								break;
+							}
+						}
+					} catch (error) {
+						console.log("Failed to fetch:", testUrl, error);
+						continue;
+					}
+				}
+
+				if (!xmlData) {
+					alert(
+						"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
+					);
+					return;
+				}
+			} else {
+				// Direct feed URL - try to fetch it
+				try {
+					// Try to fetch directly first
+					const xmlFetch = await fetch(feedUrl);
+					console.log("Status code: ", xmlFetch.status);
+					console.log("Request ok: ", xmlFetch.ok);
+					xmlData = await xmlFetch.text();
+				} catch (corsError) {
+					// Fall back to AllOrigins if CORS error occurs
+					console.log(corsError);
+					const xmlFetch = await fetch(
+						`https://api.allorigins.win/raw?url=${feedUrl}`,
+					);
+					xmlData = await xmlFetch.text();
+				}
 			}
 			const parsedXmlData = await parser.parse(xmlData);
 			console.log(parsedXmlData);
@@ -133,7 +191,7 @@ export function AppSidebar({
 			}
 
 			const result = insert("rssFeed", {
-				feedUrl: urlInput,
+				feedUrl: feedUrl,
 				title: feedData.title,
 				description: feedData.description || feedData.subtitle || "",
 				category: categoryInput || "Uncategorized",
@@ -144,8 +202,8 @@ export function AppSidebar({
 				insert("rssPost", {
 					title: post.title,
 					author: isAtom
-						? post.author?.name || "Author"
-						: post.author || "Author",
+						? post.author?.name || feedData.title
+						: post.author || feedData.title,
 					link: isAtom
 						? typeof post.link === "string"
 							? post.link || post.id
@@ -221,7 +279,7 @@ export function AppSidebar({
 					<DialogHeader>
 						<DialogTitle>Add Feed</DialogTitle>
 						<DialogDescription>
-							Add a new feed with the RSS URL
+							Enter a website URL or direct RSS feed URL
 						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-4">
@@ -232,7 +290,11 @@ export function AppSidebar({
 								name="url"
 								value={urlInput}
 								onChange={(e) => setUrlInput(e.target.value)}
+								placeholder="https://example.com"
 							/>
+							<p className="text-xs text-muted-foreground">
+								We'll automatically discover the RSS feed for you
+							</p>
 						</div>
 						<div className="grid gap-3">
 							<Label htmlFor="category-input">Category</Label>
