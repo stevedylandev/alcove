@@ -229,17 +229,11 @@ export function AppSidebar({
 					<SidebarHeader>
 						<SidebarMenu>
 							<SidebarMenuItem>
-								<SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-									<a href="#">
-										<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-											<ChartNoAxesGanttIcon className="size-4" />
-										</div>
-										<div className="grid flex-1 text-left text-sm leading-tight">
-											<span className="truncate font-medium">Alcove</span>
-											<span className="truncate text-xs">RSS Reader</span>
-										</div>
-									</a>
-								</SidebarMenuButton>
+								<a href="#">
+									<div className="grid flex-1 text-left text-xl px-2 pt-2">
+										<span className="truncate font-bold">Alcove</span>
+									</div>
+								</a>
 							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarHeader>

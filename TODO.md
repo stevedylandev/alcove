@@ -12,4 +12,4 @@ Endless rambling of things to fix and improve
 - [ ] Add loading states for new feed
 - [ ] Find a way to paginate through feeds and get more posts if they only return a few
 - [ ] Collapse both side bars if desired?
-- [ ] Update logo in top left
+- [x] Update logo in top left
