@@ -136,7 +136,7 @@ export function AppSidebar({
 			} else if (post && post.feedId) {
 				// Create new read status
 				insert("readStatus", {
-					postId: postId as any,
+					postId: postId,
 					feedId: post.feedId,
 					isRead: true,
 				});
@@ -166,7 +166,7 @@ export function AppSidebar({
 			} else if (!existingStatus && post.feedId) {
 				// Create new read status
 				insert("readStatus", {
-					postId: post.id as any,
+					postId: post.id,
 					feedId: post.feedId,
 					isRead: true,
 				});
@@ -196,7 +196,7 @@ export function AppSidebar({
 			} else if (!existingStatus && post.feedId) {
 				// Create new unread status
 				insert("readStatus", {
-					postId: post.id as any,
+					postId: post.id,
 					feedId: post.feedId,
 					isRead: false,
 				});

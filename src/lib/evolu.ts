@@ -1,6 +1,6 @@
 import { createEvolu, getOrThrow, SimpleName } from "@evolu/common";
 import { evoluReactWebDeps } from "@evolu/react-web";
-import { Schema } from "./scheme.ts";
+import { Schema, type RSSFeedId } from "./scheme.ts";
 import { createUseEvolu } from "@evolu/react";
 
 export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
@@ -20,7 +20,7 @@ export const postsByFeedQuery = (feedId: string) =>
 		db
 			.selectFrom("rssPost")
 			.selectAll()
-			.where("feedId", "=", feedId as any)
+			.where("feedId", "=", feedId as RSSFeedId)
 			.orderBy("id", "desc"),
 	);
 

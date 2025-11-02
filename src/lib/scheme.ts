@@ -9,11 +9,11 @@ import {
 
 // RSS Feed ID
 const RSSFeedId = id("RSSFeed");
-type RSSFeedId = typeof RSSFeedId.Type;
+export type RSSFeedId = typeof RSSFeedId.Type;
 
 // RSS Post ID
 const RSSPostId = id("RSSPost");
-type RSSPostId = typeof RSSPostId.Type;
+export type RSSPostId = typeof RSSPostId.Type;
 
 // Custom branded types for string length constraints
 const NonEmptyString50 = maxLength(50)(NonEmptyString);
