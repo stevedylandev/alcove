@@ -37,6 +37,7 @@ import {
 	allFeedsQuery,
 	allPostsQuery,
 	postsByFeedQuery,
+	allReadStatusesQuery,
 	useEvolu,
 	reset,
 } from "@/lib/evolu";
@@ -79,6 +80,7 @@ export function AppSidebar({
 
 	const { insert, update } = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
+	const allReadStatuses = useQuery(allReadStatusesQuery);
 
 	// Get posts based on selected feed
 	const allPosts = useQuery(allPostsQuery);
@@ -102,6 +104,33 @@ export function AppSidebar({
 			return b.publishedDate.localeCompare(a.publishedDate);
 		});
 	}, [feedPosts, searchQuery]);
+
+	// Check if a post is read
+	const isPostRead = React.useCallback(
+		(postId: string) => {
+			return allReadStatuses.some((status) => status.postId === postId);
+		},
+		[allReadStatuses],
+	);
+
+	// Handle post selection and mark as read
+	const handlePostSelect = React.useCallback(
+		(postId: string) => {
+			// Mark as read if not already read
+			if (!isPostRead(postId)) {
+				const post = feedPosts.find((p) => p.id === postId);
+				if (post) {
+					insert("readStatus", {
+						postId: postId as any,
+						feedId: post.feedId,
+					});
+				}
+			}
+			// Call the original onPostSelect
+			onPostSelect(postId);
+		},
+		[isPostRead, feedPosts, insert, onPostSelect],
+	);
 
 	async function addFeed() {
 		if (!urlInput.trim()) {
@@ -377,24 +406,36 @@ export function AppSidebar({
 							No posts found
 						</div>
 					) : (
-						filteredPosts.map((post) => (
-							<button
-								key={post.id}
-								onClick={() => onPostSelect(post.id)}
-								className={`hover:bg-sidebar-accent flex flex-col items-start gap-1.5 border-b px-3 py-3 text-sm text-left w-full last:border-b-0 transition-colors ${
-									selectedPostId === post.id ? "bg-sidebar-accent" : ""
-								}`}
-							>
-								<span className="font-medium line-clamp-2 leading-snug">
-									{post.title}
-								</span>
-								{post.author && (
-									<span className="text-muted-foreground text-xs">
-										{post.author}
-									</span>
-								)}
-							</button>
-						))
+						filteredPosts.map((post) => {
+							const isRead = isPostRead(post.id);
+							return (
+								<button
+									key={post.id}
+									onClick={() => handlePostSelect(post.id)}
+									className={`hover:bg-sidebar-accent flex items-start gap-2 border-b px-3 py-3 text-sm text-left w-full last:border-b-0 transition-colors ${
+										selectedPostId === post.id ? "bg-sidebar-accent" : ""
+									}`}
+								>
+									{/* Unread indicator */}
+									<div className="flex-shrink-0 pt-1">
+										{!isRead && (
+											<div className="size-2 rounded-full bg-primary" />
+										)}
+									</div>
+									{/* Post content */}
+									<div className="flex flex-col gap-1.5 flex-1 min-w-0">
+										<span className="font-medium line-clamp-2 leading-snug">
+											{post.title}
+										</span>
+										{post.author && (
+											<span className="text-muted-foreground text-xs">
+												{post.author}
+											</span>
+										)}
+									</div>
+								</button>
+							);
+						})
 					)}
 				</div>
 			</div>

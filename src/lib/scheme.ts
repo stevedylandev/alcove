@@ -43,6 +43,7 @@ export const Schema = {
 		id: id("ReadStatus"),
 		feedId: RSSFeedId,
 		postId: RSSPostId,
+		isDeleted: nullOr(NonEmptyString),
 	},
 	userPreferences: {
 		id: id("UserPreferences"),

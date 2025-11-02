@@ -32,6 +32,10 @@ export const feedsByCategoryQuery = evolu.createQuery((db) =>
 	db.selectFrom("rssFeed").selectAll().orderBy("category", "asc"),
 );
 
+export const allReadStatusesQuery = evolu.createQuery((db) =>
+	db.selectFrom("readStatus").selectAll().where("isDeleted", "is", null),
+);
+
 export function reset() {
 	evolu.resetAppOwner();
 }
