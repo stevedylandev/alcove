@@ -532,14 +532,18 @@ export function AppSidebar({
 									<SidebarGroupLabel>Actions</SidebarGroupLabel>
 									<SidebarGroupContent>
 										<SidebarMenu>
-											<DialogTrigger asChild>
-												<SidebarMenuItem>
-													<SidebarMenuButton>
+											<SidebarMenuItem>
+												<DialogTrigger asChild>
+													<SidebarMenuButton
+														onClick={() => {
+															setDialogOpen(true);
+														}}
+													>
 														<Plus className="size-4" />
 														<span>Add Feed</span>
 													</SidebarMenuButton>
-												</SidebarMenuItem>
-											</DialogTrigger>
+												</DialogTrigger>
+											</SidebarMenuItem>
 											<SidebarMenuItem>
 												<SidebarMenuButton onClick={reset}>
 													<RotateCw className="size-4" />
