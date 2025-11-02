@@ -25,7 +25,9 @@ import {
 	allReadStatusesWithUnreadQuery,
 	useEvolu,
 	reset,
+	evolu as evoluInstance,
 } from "@/lib/evolu";
+import * as Evolu from "@evolu/common";
 import { useQuery } from "@evolu/react";
 import {
 	fetchFeedWithFallback,
@@ -224,6 +226,36 @@ export function AppSidebar({
 		);
 	}, [filteredPosts, allReadStatusesWithUnread, evolu]);
 
+	// Delete feed (soft delete using isDeleted flag)
+	const handleDeleteFeed = React.useCallback(() => {
+		if (!selectedFeedId) return;
+
+		const feedToDelete = allFeeds.find((f) => f.id === selectedFeedId);
+		if (!feedToDelete) return;
+
+		// Soft delete the feed (CRDT-friendly, preserves sync history)
+		evoluInstance.update("rssFeed", {
+			id: selectedFeedId as any,
+			isDeleted: Evolu.sqliteTrue,
+		});
+
+		// Also soft delete all posts associated with this feed
+		const postsToDelete = allPosts.filter((p) => p.feedId === selectedFeedId);
+		postsToDelete.forEach((post) => {
+			evoluInstance.update("rssPost", {
+				id: post.id as any,
+				isDeleted: Evolu.sqliteTrue,
+			});
+		});
+
+		toast.success(
+			`Deleted feed "${feedToDelete.title}" and ${postsToDelete.length} post${postsToDelete.length !== 1 ? "s" : ""}`,
+		);
+
+		// Navigate back to all feeds
+		onFeedSelect(null);
+	}, [selectedFeedId, allFeeds, allPosts, onFeedSelect]);
+
 	const refreshFeeds = React.useCallback(async () => {
 		if (allFeeds.length === 0) {
 			toast.error("No feeds to refresh");
@@ -344,6 +376,8 @@ export function AppSidebar({
 								isPostRead={isPostRead}
 								onMarkAllAsRead={handleMarkAllAsRead}
 								onMarkAllAsUnread={handleMarkAllAsUnread}
+								onDeleteFeed={handleDeleteFeed}
+								selectedFeedId={selectedFeedId}
 								className="border-0"
 							/>
 						</div>
@@ -381,6 +415,8 @@ export function AppSidebar({
 				isPostRead={isPostRead}
 				onMarkAllAsRead={handleMarkAllAsRead}
 				onMarkAllAsUnread={handleMarkAllAsUnread}
+				onDeleteFeed={handleDeleteFeed}
+				selectedFeedId={selectedFeedId}
 				className={`bg-sidebar text-sidebar-foreground hidden md:flex ${hidden ? "w-0 min-w-0 border-0 overflow-hidden" : "w-[320px] overflow-y-auto"}`}
 			/>
 		</>

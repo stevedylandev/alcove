@@ -1,4 +1,4 @@
-import { MoreVertical, Check, X } from "lucide-react";
+import { MoreVertical, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -28,6 +28,8 @@ interface PostsListProps {
 	isPostRead: (postId: string) => boolean;
 	onMarkAllAsRead: () => void;
 	onMarkAllAsUnread: () => void;
+	onDeleteFeed?: () => void;
+	selectedFeedId?: string | null;
 	className?: string;
 }
 
@@ -41,6 +43,8 @@ export function PostsList({
 	isPostRead,
 	onMarkAllAsRead,
 	onMarkAllAsUnread,
+	onDeleteFeed,
+	selectedFeedId,
 	className = "",
 }: PostsListProps) {
 	return (
@@ -69,6 +73,15 @@ export function PostsList({
 									<X className="h-4 w-4 mr-2" />
 									Mark all as unread
 								</DropdownMenuItem>
+								{selectedFeedId && onDeleteFeed && (
+									<DropdownMenuItem
+										onClick={onDeleteFeed}
+										className="text-destructive focus:text-destructive"
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Delete feed
+									</DropdownMenuItem>
+								)}
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>

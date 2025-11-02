@@ -33,7 +33,10 @@ evolu.subscribeError(() => {
 });
 
 export const allFeedsQuery = evolu.createQuery((db) =>
-	db.selectFrom("rssFeed").selectAll(),
+	db
+		.selectFrom("rssFeed")
+		.selectAll()
+		.where("isDeleted", "is not", Evolu.sqliteTrue),
 );
 
 export const postsByFeedQuery = (feedId: string) =>
@@ -42,15 +45,24 @@ export const postsByFeedQuery = (feedId: string) =>
 			.selectFrom("rssPost")
 			.selectAll()
 			.where("feedId", "=", feedId as RSSFeedId)
+			.where("isDeleted", "is not", Evolu.sqliteTrue)
 			.orderBy("id", "desc"),
 	);
 
 export const allPostsQuery = evolu.createQuery((db) =>
-	db.selectFrom("rssPost").selectAll().orderBy("id", "desc"),
+	db
+		.selectFrom("rssPost")
+		.selectAll()
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
+		.orderBy("id", "desc"),
 );
 
 export const feedsByCategoryQuery = evolu.createQuery((db) =>
-	db.selectFrom("rssFeed").selectAll().orderBy("category", "asc"),
+	db
+		.selectFrom("rssFeed")
+		.selectAll()
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
+		.orderBy("category", "asc"),
 );
 
 export const allReadStatusesQuery = evolu.createQuery((db) =>
