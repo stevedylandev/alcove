@@ -59,7 +59,7 @@ function Dashboard() {
 		try {
 			const url = new URL(link);
 			return `${url.protocol}//${url.host}`;
-		} catch (e) {
+		} catch {
 			return "";
 		}
 	}, []);
@@ -67,7 +67,7 @@ function Dashboard() {
 	// Custom components for ReactMarkdown to fix image URLs
 	const markdownComponents = React.useMemo(
 		() => ({
-			img: ({ node, src, alt, ...props }: any) => {
+			img: ({ src, alt, ...props }: any) => {
 				let fixedSrc = src;
 
 				// If src starts with / and we have a base URL from the post link
