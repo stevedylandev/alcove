@@ -16,6 +16,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	useSidebar,
 } from "@/components/ui/sidebar";
 
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export function AppSidebar({
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [statusMessage, setStatusMessage] = React.useState("");
 
+	const { hidden } = useSidebar();
 	const { insert, update } = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allReadStatuses = useQuery(allReadStatusesQuery);
@@ -365,7 +367,7 @@ export function AppSidebar({
 	return (
 		<>
 			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-				<Sidebar collapsible="icon" {...props}>
+				<Sidebar collapsible="offcanvas" {...props}>
 					<SidebarHeader>
 						<SidebarMenu>
 							<SidebarMenuItem>
@@ -460,7 +462,9 @@ export function AppSidebar({
 			</Dialog>
 
 			{/* Posts List Panel - Separate from main sidebar */}
-			<div className="bg-sidebar text-sidebar-foreground hidden md:flex overflow-y-scroll h-screen w-[320px] flex-col border-r">
+			<div
+				className={`bg-sidebar text-sidebar-foreground hidden md:flex h-screen flex-col border-r ${hidden ? "w-0 min-w-0 border-0 overflow-hidden" : "w-[320px] overflow-y-auto"}`}
+			>
 				<div className="gap-2 border-b p-3 flex flex-col">
 					<div className="flex w-full items-center justify-between gap-2">
 						<div className="text-foreground text-sm font-semibold truncate">
