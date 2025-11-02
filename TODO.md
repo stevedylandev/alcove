@@ -13,4 +13,4 @@ Endless rambling of things to fix and improve
 - [ ] Find a way to paginate through feeds and get more posts if they only return a few
 - [ ] Collapse both side bars if desired?
 - [x] Update logo in top left
-- [ ] Marking Read and Unread
+- [x] Marking Read and Unread

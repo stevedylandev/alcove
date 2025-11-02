@@ -122,7 +122,7 @@ export function AppSidebar({
 	const handlePostSelect = React.useCallback(
 		(postId: string) => {
 			// Mark as read
-			const existingStatus = allReadStatuses.find(
+			const existingStatus = allReadStatusesWithUnread.find(
 				(status) => status.postId === postId,
 			);
 			const post = feedPosts.find((p) => p.id === postId);
@@ -130,22 +130,22 @@ export function AppSidebar({
 			if (existingStatus) {
 				// Update existing status to read
 				update("readStatus", {
-					id: existingStatus.id,
-					isRead: true,
+					id: existingStatus.id as any,
+					isRead: 1,
 				});
 			} else if (post && post.feedId) {
 				// Create new read status
 				insert("readStatus", {
 					postId: postId,
 					feedId: post.feedId,
-					isRead: true,
+					isRead: 1,
 				});
 			}
 
 			// Call the original onPostSelect
 			onPostSelect(postId);
 		},
-		[allReadStatuses, feedPosts, insert, update, onPostSelect],
+		[allReadStatusesWithUnread, feedPosts, insert, update, onPostSelect],
 	);
 
 	// Mark all visible posts as read
@@ -159,8 +159,8 @@ export function AppSidebar({
 			if (existingStatus && !existingStatus.isRead) {
 				// Update existing status to read
 				update("readStatus", {
-					id: existingStatus.id,
-					isRead: true,
+					id: existingStatus.id as any,
+					isRead: 1,
 				});
 				markedCount++;
 			} else if (!existingStatus && post.feedId) {
@@ -168,7 +168,7 @@ export function AppSidebar({
 				insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
-					isRead: true,
+					isRead: 1,
 				});
 				markedCount++;
 			}
@@ -189,8 +189,8 @@ export function AppSidebar({
 			if (existingStatus && existingStatus.isRead) {
 				// Update existing status to unread
 				update("readStatus", {
-					id: existingStatus.id,
-					isRead: false,
+					id: existingStatus.id as any,
+					isRead: 0,
 				});
 				unmarkedCount++;
 			} else if (!existingStatus && post.feedId) {
@@ -198,7 +198,7 @@ export function AppSidebar({
 				insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
-					isRead: false,
+					isRead: 0,
 				});
 				unmarkedCount++;
 			}
