@@ -296,7 +296,7 @@ function SidebarTrigger({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { hideSidebar, showSidebar, hidden } = useSidebar();
+	const { toggleSidebar } = useSidebar();
 
 	return (
 		<Button
@@ -307,11 +307,7 @@ function SidebarTrigger({
 			className={cn("size-7", className)}
 			onClick={(event) => {
 				onClick?.(event);
-				if (hidden) {
-					showSidebar();
-				} else {
-					hideSidebar();
-				}
+				toggleSidebar();
 			}}
 			{...props}
 		>
