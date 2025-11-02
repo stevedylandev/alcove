@@ -28,6 +28,7 @@ export const Schema = {
 		title: NonEmptyString200,
 		description: nullOr(NonEmptyString1000),
 		category: nullOr(NonEmptyString50),
+		dateUpdated: nullOr(NonEmptyString),
 	},
 	rssPost: {
 		id: RSSPostId,
@@ -36,6 +37,7 @@ export const Schema = {
 		link: NonEmptyString1000,
 		content: nullOr(NonEmptyString),
 		author: nullOr(NonEmptyString200),
+		publishedDate: nullOr(NonEmptyString),
 	},
 	readStatus: {
 		id: id("ReadStatus"),

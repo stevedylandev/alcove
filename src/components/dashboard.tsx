@@ -148,6 +148,18 @@ function Dashboard() {
 											</Button>
 										)}
 									</div>
+									<span className="text-xs text-muted-foreground">
+										{selectedPost.publishedDate
+											? new Date(selectedPost.publishedDate).toLocaleDateString(
+													"en-US",
+													{
+														year: "numeric",
+														month: "long",
+														day: "numeric",
+													},
+												)
+											: ""}
+									</span>
 								</div>
 								<Separator />
 								{selectedPost.content ? (

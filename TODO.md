@@ -2,8 +2,8 @@
 
 Endless rambling of things to fix and improve
 
-- [ ] Add `publishedDate` to `rssPost`
-- [ ] Order posts by newest first
+- [x] Add `publishedDate` to `rssPost`
+- [x] Order posts by newest first
 - [x] Instead of "by author" if Author is unavailable, use blog/feed name
 - [x] Add auto-find RSS feed when adding a feed
 - [ ] When scrolling through one feed and then selecting another, make the content scroll back to the top

@@ -48,6 +48,11 @@ export function NavFeeds({
 		{} as Record<string, Feed[]>,
 	);
 
+	// Sort feeds within each category alphabetically by title
+	Object.keys(feedsByCategory).forEach((category) => {
+		feedsByCategory[category].sort((a, b) => a.title.localeCompare(b.title));
+	});
+
 	const categories = Object.keys(feedsByCategory).sort();
 
 	return (

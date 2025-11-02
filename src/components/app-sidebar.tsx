@@ -89,12 +89,22 @@ export function AppSidebar({
 	const feedPostsQuery = useQuery(postsByFeedQuery(selectedFeedId || ""));
 	const feedPosts = selectedFeedId ? feedPostsQuery : allPosts;
 
-	// Filter posts by search query
+	// Filter and sort posts by search query and date
 	const filteredPosts = React.useMemo(() => {
-		if (!searchQuery) return feedPosts;
-		return feedPosts.filter((post) =>
-			post.title?.toLowerCase().includes(searchQuery.toLowerCase()),
-		);
+		const filtered = searchQuery
+			? feedPosts.filter((post) =>
+					post.title?.toLowerCase().includes(searchQuery.toLowerCase()),
+				)
+			: feedPosts;
+
+		// Sort by publishedDate (most recent first)
+		return [...filtered].sort((a, b) => {
+			// Handle null dates - put them at the end
+			if (!a.publishedDate) return 1;
+			if (!b.publishedDate) return -1;
+			// Most recent first (descending order)
+			return b.publishedDate.localeCompare(a.publishedDate);
+		});
 	}, [feedPosts, searchQuery]);
 
 	async function addFeed() {
@@ -195,6 +205,7 @@ export function AppSidebar({
 				title: feedData.title,
 				description: feedData.description || feedData.subtitle || "",
 				category: categoryInput || "Uncategorized",
+				dateUpdated: new Date().toISOString(),
 			});
 
 			// Process posts/entries
@@ -204,6 +215,7 @@ export function AppSidebar({
 					author: isAtom
 						? post.author?.name || feedData.title
 						: post.author || feedData.title,
+					publishedDate: new Date(post.pubDate || post.updated).toISOString(),
 					link: isAtom
 						? typeof post.link === "string"
 							? post.link || post.id
