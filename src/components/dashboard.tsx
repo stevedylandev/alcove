@@ -17,7 +17,7 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Circle, CircleCheckBig } from "lucide-react";
+import { Circle, CircleCheckBig } from "lucide-react";
 import { useQuery } from "@evolu/react";
 import {
 	allFeedsQuery,
