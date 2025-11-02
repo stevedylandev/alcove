@@ -17,13 +17,20 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Circle, CircleCheckBig } from "lucide-react";
 import { useQuery } from "@evolu/react";
-import { allFeedsQuery, allPostsQuery } from "@/lib/evolu";
+import {
+	allFeedsQuery,
+	allPostsQuery,
+	allReadStatusesQuery,
+	allReadStatusesWithUnreadQuery,
+	useEvolu,
+} from "@/lib/evolu";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 
 function Dashboard() {
 	const [selectedFeedId, setSelectedFeedId] = React.useState<string | null>(
@@ -34,8 +41,11 @@ function Dashboard() {
 	);
 	const mainContentRef = React.useRef<HTMLDivElement>(null);
 
+	const evolu = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allPosts = useQuery(allPostsQuery);
+	const allReadStatuses = useQuery(allReadStatusesQuery);
+	const allReadStatusesWithUnread = useQuery(allReadStatusesWithUnreadQuery);
 	console.log(allPosts);
 
 	const selectedFeed = selectedFeedId
@@ -45,6 +55,39 @@ function Dashboard() {
 	const selectedPost = selectedPostId
 		? allPosts.find((p) => p.id === selectedPostId)
 		: null;
+
+	// Check if current post is read
+	const isCurrentPostRead = React.useMemo(() => {
+		if (!selectedPostId) return false;
+		return allReadStatuses.some((status) => status.postId === selectedPostId);
+	}, [selectedPostId, allReadStatuses]);
+
+	// Toggle read/unread status for current post
+	const toggleReadStatus = React.useCallback(() => {
+		if (!selectedPostId || !selectedPost) return;
+
+		const existingStatus = allReadStatusesWithUnread.find(
+			(status) => status.postId === selectedPostId,
+		);
+
+		if (existingStatus) {
+			// Update existing status
+			const newReadStatus = existingStatus.isRead ? 0 : 1;
+			evolu.update("readStatus", {
+				id: existingStatus.id as any,
+				isRead: newReadStatus,
+			});
+			toast.success(newReadStatus ? "Marked as read" : "Marked as unread");
+		} else if (selectedPost.feedId) {
+			// Create new read status (mark as read)
+			evolu.insert("readStatus", {
+				postId: selectedPostId,
+				feedId: selectedPost.feedId,
+				isRead: 1,
+			});
+			toast.success("Marked as read");
+		}
+	}, [selectedPostId, selectedPost, allReadStatusesWithUnread, evolu]);
 
 	// Scroll to top when a new post is selected
 	React.useEffect(() => {
@@ -138,26 +181,47 @@ function Dashboard() {
 						{selectedPost ? (
 							<div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-8">
 								<div className="flex flex-col gap-3">
-									<h1 className="text-3xl font-bold tracking-tight">
+									<a
+										href={selectedPost.link ? selectedPost.link : ""}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-3xl font-bold tracking-tight hover:underline"
+									>
 										{selectedPost.title}
-									</h1>
+									</a>
 									<div className="flex items-center gap-4 text-sm text-muted-foreground">
 										{selectedPost.author && (
-											<span>By {selectedPost.author}</span>
-										)}
-										{selectedPost.link && (
-											<Button variant="outline" size="sm" asChild>
+											<>
+												{" "}
+												by
 												<a
-													href={selectedPost.link}
 													target="_blank"
 													rel="noopener noreferrer"
-													className="flex items-center gap-2"
+													className="hover:underline"
+													href={
+														selectedPost.author && selectedPost.link
+															? getBaseUrl(selectedPost.link)
+															: ""
+													}
 												>
-													<ExternalLink className="h-3 w-3" />
-													Open Original
+													{selectedPost.author}
 												</a>
-											</Button>
+											</>
 										)}
+										<div className="flex items-center gap-2">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={toggleReadStatus}
+												className="flex items-center gap-2"
+											>
+												{isCurrentPostRead ? (
+													<Circle className="h-3 w-3" />
+												) : (
+													<CircleCheckBig className="h-3 w-3" />
+												)}
+											</Button>
+										</div>
 									</div>
 									<span className="text-xs text-muted-foreground">
 										{selectedPost.publishedDate
