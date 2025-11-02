@@ -177,10 +177,9 @@ export function AppSidebar({
 			onPostSelect(postId);
 
 			// On mobile, close the sidebar after selecting a post
+			// Keep the current view (posts) so user can continue where they left off
 			if (isMobile) {
 				setOpenMobile(false);
-				// Reset to feeds view for next time sidebar opens
-				setTimeout(() => setMobileView("feeds"), 300);
 			}
 		},
 		[
