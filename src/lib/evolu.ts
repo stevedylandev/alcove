@@ -1,15 +1,36 @@
-import { createEvolu, getOrThrow, SimpleName } from "@evolu/common";
+import * as Evolu from "@evolu/common";
 import { evoluReactWebDeps } from "@evolu/react-web";
 import { Schema, type RSSFeedId } from "./scheme.ts";
 import { createUseEvolu } from "@evolu/react";
 
-export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
-	name: getOrThrow(SimpleName.from("alcove")),
-	syncUrl: "http://localhost:4000", // optional, defaults to wss://free.evoluhq.com
+const service = "alcove";
+
+// Initialize authentication
+const authResult = await evoluReactWebDeps.localAuth.login(undefined, {
+	service,
+});
+
+export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
+	name: Evolu.SimpleName.orThrow(
+		`${service}-${authResult?.owner?.id ?? "guest"}`,
+	),
 	reloadUrl: "/",
+	encryptionKey: authResult?.owner?.encryptionKey,
+	externalAppOwner: authResult?.owner,
+	transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
 });
 
 export const useEvolu = createUseEvolu(evolu);
+
+/**
+ * Subscribe to unexpected Evolu errors (database, network, sync issues).
+ */
+evolu.subscribeError(() => {
+	const error = evolu.getError();
+	if (!error) return;
+
+	console.error("Evolu error:", error);
+});
 
 export const allFeedsQuery = evolu.createQuery((db) =>
 	db.selectFrom("rssFeed").selectAll(),

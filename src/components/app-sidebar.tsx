@@ -96,7 +96,7 @@ export function AppSidebar({
 	const hasRefreshedOnMount = React.useRef(false);
 
 	const { hidden, isMobile, setOpenMobile } = useSidebar();
-	const { insert, update } = useEvolu();
+	const evolu = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allReadStatuses = useQuery(allReadStatusesQuery);
 	const allReadStatusesWithUnread = useQuery(allReadStatusesWithUnreadQuery);
@@ -161,13 +161,13 @@ export function AppSidebar({
 
 			if (existingStatus) {
 				// Update existing status to read
-				update("readStatus", {
+				evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 1,
 				});
 			} else if (post && post.feedId) {
 				// Create new read status
-				insert("readStatus", {
+				evolu.insert("readStatus", {
 					postId: postId,
 					feedId: post.feedId,
 					isRead: 1,
@@ -186,8 +186,7 @@ export function AppSidebar({
 		[
 			allReadStatusesWithUnread,
 			feedPosts,
-			insert,
-			update,
+			evolu,
 			onPostSelect,
 			isMobile,
 			setOpenMobile,
@@ -204,14 +203,14 @@ export function AppSidebar({
 
 			if (existingStatus && !existingStatus.isRead) {
 				// Update existing status to read
-				update("readStatus", {
+				evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 1,
 				});
 				markedCount++;
 			} else if (!existingStatus && post.feedId) {
 				// Create new read status
-				insert("readStatus", {
+				evolu.insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
 					isRead: 1,
@@ -222,7 +221,7 @@ export function AppSidebar({
 		toast.success(
 			`Marked ${markedCount} post${markedCount !== 1 ? "s" : ""} as read`,
 		);
-	}, [filteredPosts, allReadStatusesWithUnread, insert, update]);
+	}, [filteredPosts, allReadStatusesWithUnread, evolu]);
 
 	// Mark all visible posts as unread
 	const handleMarkAllAsUnread = React.useCallback(() => {
@@ -234,14 +233,14 @@ export function AppSidebar({
 
 			if (existingStatus && existingStatus.isRead) {
 				// Update existing status to unread
-				update("readStatus", {
+				evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 0,
 				});
 				unmarkedCount++;
 			} else if (!existingStatus && post.feedId) {
 				// Create new unread status
-				insert("readStatus", {
+				evolu.insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
 					isRead: 0,
@@ -252,7 +251,7 @@ export function AppSidebar({
 		toast.success(
 			`Marked ${unmarkedCount} post${unmarkedCount !== 1 ? "s" : ""} as unread`,
 		);
-	}, [filteredPosts, allReadStatusesWithUnread, insert, update]);
+	}, [filteredPosts, allReadStatusesWithUnread, evolu]);
 
 	const refreshFeeds = React.useCallback(async () => {
 		if (allFeeds.length === 0) {
@@ -268,6 +267,8 @@ export function AppSidebar({
 		try {
 			for (const feed of allFeeds) {
 				try {
+					if (!feed.feedUrl) continue;
+
 					let xmlData: string;
 
 					// Try to fetch directly first
@@ -322,7 +323,7 @@ export function AppSidebar({
 							continue;
 						}
 
-						insert("rssPost", {
+						evolu.insert("rssPost", {
 							title: post.title,
 							author: isAtom
 								? post.author?.name || feedData.title
@@ -343,7 +344,7 @@ export function AppSidebar({
 					totalNewPosts += newPostsCount;
 
 					// Update feed's dateUpdated
-					update("rssFeed", {
+					evolu.update("rssFeed", {
 						id: feed.id as any,
 						dateUpdated: new Date().toISOString(),
 					});
@@ -364,7 +365,7 @@ export function AppSidebar({
 			console.error("Error refreshing feeds:", error);
 			toast.error("Failed to refresh feeds");
 		}
-	}, [allFeeds, allPosts, insert, update]);
+	}, [allFeeds, allPosts, evolu]);
 
 	// Run refresh on component mount (only once, even in strict mode)
 	React.useEffect(() => {
@@ -478,7 +479,7 @@ export function AppSidebar({
 				throw new Error("Unsupported feed format");
 			}
 
-			const result = insert("rssFeed", {
+			const result = evolu.insert("rssFeed", {
 				feedUrl: feedUrl,
 				title: feedData.title,
 				description: feedData.description || feedData.subtitle || "",
@@ -492,7 +493,7 @@ export function AppSidebar({
 
 			// Process posts/entries
 			for (const post of posts) {
-				insert("rssPost", {
+				evolu.insert("rssPost", {
 					title: post.title,
 					author: isAtom
 						? post.author?.name || feedData.title
