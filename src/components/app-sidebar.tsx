@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Plus, RotateCw, MoreVertical, Check, X } from "lucide-react";
+import {
+	Plus,
+	RotateCw,
+	MoreVertical,
+	Check,
+	X,
+	ChevronLeft,
+} from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import { NavFeeds } from "@/components/nav-feeds";
@@ -82,8 +89,12 @@ export function AppSidebar({
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [statusMessage, setStatusMessage] = React.useState("");
+	// Mobile navigation state: 'feeds' or 'posts'
+	const [mobileView, setMobileView] = React.useState<"feeds" | "posts">(
+		"feeds",
+	);
 
-	const { hidden } = useSidebar();
+	const { hidden, isMobile, setOpenMobile } = useSidebar();
 	const { insert, update } = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allReadStatuses = useQuery(allReadStatusesQuery);
@@ -120,6 +131,24 @@ export function AppSidebar({
 		[allReadStatuses],
 	);
 
+	// Handle feed selection - on mobile, navigate to posts view
+	const handleFeedSelect = React.useCallback(
+		(feedId: string | null) => {
+			onFeedSelect(feedId);
+			// Navigate to posts view on mobile for any feed selection (including "All Feeds")
+			if (isMobile) {
+				setMobileView("posts");
+			}
+		},
+		[onFeedSelect, isMobile],
+	);
+
+	// Handle back to feeds on mobile
+	const handleBackToFeeds = React.useCallback(() => {
+		setMobileView("feeds");
+		onFeedSelect(null);
+	}, [onFeedSelect]);
+
 	// Handle post selection and mark as read
 	const handlePostSelect = React.useCallback(
 		(postId: string) => {
@@ -146,8 +175,23 @@ export function AppSidebar({
 
 			// Call the original onPostSelect
 			onPostSelect(postId);
+
+			// On mobile, close the sidebar after selecting a post
+			if (isMobile) {
+				setOpenMobile(false);
+				// Reset to feeds view for next time sidebar opens
+				setTimeout(() => setMobileView("feeds"), 300);
+			}
 		},
-		[allReadStatusesWithUnread, feedPosts, insert, update, onPostSelect],
+		[
+			allReadStatusesWithUnread,
+			feedPosts,
+			insert,
+			update,
+			onPostSelect,
+			isMobile,
+			setOpenMobile,
+		],
 	);
 
 	// Mark all visible posts as read
@@ -371,44 +415,152 @@ export function AppSidebar({
 					<SidebarHeader>
 						<SidebarMenu>
 							<SidebarMenuItem>
-								<a href="#">
-									<div className="grid flex-1 text-left text-xl px-2 pt-2">
-										<span className="truncate font-bold">Alcove</span>
+								{isMobile && mobileView === "posts" ? (
+									<div className="flex items-center gap-2 px-2 pt-2">
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleBackToFeeds}
+											className="h-8 w-8 p-0"
+										>
+											<ChevronLeft className="size-5" />
+										</Button>
+										<div className="flex-1 text-left text-xl">
+											<span className="truncate font-bold">
+												{selectedFeedId
+													? allFeeds.find((f) => f.id === selectedFeedId)
+															?.title || "Posts"
+													: "All Posts"}
+											</span>
+										</div>
 									</div>
-								</a>
+								) : (
+									<a href="#">
+										<div className="grid flex-1 text-left text-xl px-2 pt-2">
+											<span className="truncate font-bold">Alcove</span>
+										</div>
+									</a>
+								)}
 							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarHeader>
 					<SidebarContent>
-						<SidebarGroup>
-							<SidebarGroupLabel>Actions</SidebarGroupLabel>
-							<SidebarGroupContent>
-								<SidebarMenu>
-									<DialogTrigger asChild>
-										<SidebarMenuItem>
-											<SidebarMenuButton>
-												<Plus className="size-4" />
-												<span>Add Feed</span>
-											</SidebarMenuButton>
-										</SidebarMenuItem>
-									</DialogTrigger>
-									<SidebarMenuItem>
-										<SidebarMenuButton onClick={reset}>
-											<RotateCw className="size-4" />
-											<span>Reset</span>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</SidebarGroup>
-						<NavFeeds
-							feeds={allFeeds}
-							selectedFeedId={selectedFeedId}
-							onFeedSelect={onFeedSelect}
-						/>
+						{isMobile && mobileView === "posts" ? (
+							// Mobile posts view
+							<div className="flex flex-col h-full">
+								<div className="gap-2 border-b p-3 flex flex-col">
+									<div className="flex w-full items-center justify-between gap-2">
+										<div className="text-foreground text-sm font-semibold truncate">
+											{filteredPosts.length} post
+											{filteredPosts.length !== 1 ? "s" : ""}
+										</div>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-6 w-6 p-0"
+												>
+													<MoreVertical className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuItem onClick={handleMarkAllAsRead}>
+													<Check className="h-4 w-4 mr-2" />
+													Mark all as read
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={handleMarkAllAsUnread}>
+													<X className="h-4 w-4 mr-2" />
+													Mark all as unread
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</div>
+									<Input
+										placeholder="Search..."
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										className="h-8"
+									/>
+								</div>
+								<div className="flex-1 overflow-y-auto">
+									{filteredPosts.length === 0 ? (
+										<div className="p-4 text-center text-sm text-muted-foreground">
+											No posts found
+										</div>
+									) : (
+										filteredPosts.map((post) => {
+											const isRead = isPostRead(post.id);
+											return (
+												<button
+													type="button"
+													key={post.id}
+													onClick={() => handlePostSelect(post.id)}
+													className={`hover:bg-sidebar-accent flex items-start gap-2 border-b px-3 py-3 text-sm text-left w-full last:border-b-0 transition-colors ${
+														selectedPostId === post.id
+															? "bg-sidebar-accent"
+															: ""
+													}`}
+												>
+													{/* Unread indicator */}
+													<div className="flex-shrink-0 pt-1">
+														{!isRead && (
+															<div className="size-2 rounded-full bg-primary" />
+														)}
+													</div>
+													{/* Post content */}
+													<div className="flex flex-col gap-1.5 flex-1 min-w-0">
+														<span className="font-medium line-clamp-2 leading-snug">
+															{post.title}
+														</span>
+														{post.author && (
+															<span className="text-muted-foreground text-xs">
+																{post.author}
+															</span>
+														)}
+													</div>
+												</button>
+											);
+										})
+									)}
+								</div>
+							</div>
+						) : (
+							// Feeds view (desktop and mobile default)
+							<>
+								<SidebarGroup>
+									<SidebarGroupLabel>Actions</SidebarGroupLabel>
+									<SidebarGroupContent>
+										<SidebarMenu>
+											<DialogTrigger asChild>
+												<SidebarMenuItem>
+													<SidebarMenuButton>
+														<Plus className="size-4" />
+														<span>Add Feed</span>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											</DialogTrigger>
+											<SidebarMenuItem>
+												<SidebarMenuButton onClick={reset}>
+													<RotateCw className="size-4" />
+													<span>Reset</span>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										</SidebarMenu>
+									</SidebarGroupContent>
+								</SidebarGroup>
+								<NavFeeds
+									feeds={allFeeds}
+									selectedFeedId={selectedFeedId}
+									onFeedSelect={handleFeedSelect}
+								/>
+							</>
+						)}
 					</SidebarContent>
 					<SidebarFooter>
-						<NavUser user={data.user} />
+						{!isMobile || mobileView === "feeds" ? (
+							<NavUser user={data.user} />
+						) : null}
 					</SidebarFooter>
 				</Sidebar>
 				<DialogContent className="sm:max-w-[425px]">
