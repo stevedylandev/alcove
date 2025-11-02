@@ -32,6 +32,7 @@ function Dashboard() {
 	const [selectedPostId, setSelectedPostId] = React.useState<string | null>(
 		null,
 	);
+	const mainContentRef = React.useRef<HTMLDivElement>(null);
 
 	const allFeeds = useQuery(allFeedsQuery);
 	const allPosts = useQuery(allPostsQuery);
@@ -44,6 +45,13 @@ function Dashboard() {
 	const selectedPost = selectedPostId
 		? allPosts.find((p) => p.id === selectedPostId)
 		: null;
+
+	// Scroll to top when a new post is selected
+	React.useEffect(() => {
+		if (selectedPostId && mainContentRef.current) {
+			mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+		}
+	}, [selectedPostId]);
 
 	// Get base URL from the post link to fix relative image paths
 	const getBaseUrl = React.useCallback((link: string | null) => {
@@ -123,7 +131,10 @@ function Dashboard() {
 							</BreadcrumbList>
 						</Breadcrumb>
 					</header>
-					<div className="h-full flex flex-1 flex-col gap-4 p-4 pb-12 overflow-y-auto">
+					<div
+						ref={mainContentRef}
+						className="h-full flex flex-1 flex-col gap-4 p-4 pb-12 overflow-y-auto"
+					>
 						{selectedPost ? (
 							<div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-8">
 								<div className="flex flex-col gap-3">
