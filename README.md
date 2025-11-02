@@ -7,8 +7,8 @@ End-to-end encrypted RSS reader for the web
 
 ## Roadmap
 
-- [ ] Mark posts as read/unread
+- [x] Mark posts as read/unread
 - [ ] Import/Export OPML
 - [ ] Import/Export account through mnemonic
-- [ ] Refresh/Update Feeds
+- [x] Refresh/Update Feeds
 - [ ] Tweakcn theme switching

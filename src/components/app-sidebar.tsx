@@ -93,6 +93,7 @@ export function AppSidebar({
 	const [mobileView, setMobileView] = React.useState<"feeds" | "posts">(
 		"feeds",
 	);
+	const hasRefreshedOnMount = React.useRef(false);
 
 	const { hidden, isMobile, setOpenMobile } = useSidebar();
 	const { insert, update } = useEvolu();
@@ -252,6 +253,127 @@ export function AppSidebar({
 			`Marked ${unmarkedCount} post${unmarkedCount !== 1 ? "s" : ""} as unread`,
 		);
 	}, [filteredPosts, allReadStatusesWithUnread, insert, update]);
+
+	const refreshFeeds = React.useCallback(async () => {
+		if (allFeeds.length === 0) {
+			toast.error("No feeds to refresh");
+			return;
+		}
+
+		toast.info(
+			`Refreshing ${allFeeds.length} feed${allFeeds.length !== 1 ? "s" : ""}...`,
+		);
+		let totalNewPosts = 0;
+
+		try {
+			for (const feed of allFeeds) {
+				try {
+					let xmlData: string;
+
+					// Try to fetch directly first
+					try {
+						const xmlFetch = await fetch(feed.feedUrl);
+						xmlData = await xmlFetch.text();
+					} catch (corsError) {
+						// Fall back to corsproxy.io if CORS error occurs
+						const xmlFetch = await fetch(
+							`https://corsproxy.io/?url=${encodeURIComponent(feed.feedUrl)}`,
+						);
+						xmlData = await xmlFetch.text();
+					}
+
+					const parsedXmlData = await parser.parse(xmlData);
+
+					// Determine if it's RSS or Atom feed
+					let feedData: any;
+					let posts: any[];
+					let isAtom = false;
+
+					if (parsedXmlData.rss) {
+						// RSS feed
+						feedData = parsedXmlData.rss.channel;
+						posts = feedData.item || [];
+					} else if (parsedXmlData.feed) {
+						// Atom feed
+						feedData = parsedXmlData.feed;
+						posts = feedData.entry || [];
+						isAtom = true;
+					} else {
+						console.warn(`Unsupported feed format for ${feed.title}`);
+						continue;
+					}
+
+					// Get existing posts for this feed to avoid duplicates
+					// Use allPosts to ensure we check against all posts in the database
+					const existingPosts = allPosts.filter((p) => p.feedId === feed.id);
+					const existingLinks = new Set(existingPosts.map((p) => p.link));
+
+					// Process new posts/entries
+					let newPostsCount = 0;
+					for (const post of posts) {
+						const postLink = isAtom
+							? typeof post.link === "string"
+								? post.link || post.id
+								: post.link?.[0] || post.id
+							: post.link || post.id;
+
+						// Skip if we already have this post
+						if (existingLinks.has(postLink)) {
+							continue;
+						}
+
+						insert("rssPost", {
+							title: post.title,
+							author: isAtom
+								? post.author?.name || feedData.title
+								: post.author || feedData.title,
+							publishedDate: new Date(
+								post.pubDate || post.updated,
+							).toISOString(),
+							link: postLink,
+							feedId: feed.id,
+							content:
+								post["content:encoded"] ||
+								post.content ||
+								"Please open on the web",
+						});
+						newPostsCount++;
+					}
+
+					totalNewPosts += newPostsCount;
+
+					// Update feed's dateUpdated
+					update("rssFeed", {
+						id: feed.id as any,
+						dateUpdated: new Date().toISOString(),
+					});
+				} catch (error) {
+					console.error(`Error refreshing feed "${feed.title}":`, error);
+					// Continue with other feeds even if one fails
+				}
+			}
+
+			if (totalNewPosts > 0) {
+				toast.success(
+					`Refreshed feeds and found ${totalNewPosts} new post${totalNewPosts !== 1 ? "s" : ""}`,
+				);
+			} else {
+				toast.success("All feeds up to date");
+			}
+		} catch (error) {
+			console.error("Error refreshing feeds:", error);
+			toast.error("Failed to refresh feeds");
+		}
+	}, [allFeeds, allPosts, insert, update]);
+
+	// Run refresh on component mount (only once, even in strict mode)
+	React.useEffect(() => {
+		if (!hasRefreshedOnMount.current) {
+			hasRefreshedOnMount.current = true;
+			refreshFeeds();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only run once on mount
 
 	async function addFeed() {
 		if (!urlInput.trim()) {
@@ -547,6 +669,12 @@ export function AppSidebar({
 												<SidebarMenuButton onClick={reset}>
 													<RotateCw className="size-4" />
 													<span>Reset</span>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+											<SidebarMenuItem>
+												<SidebarMenuButton onClick={refreshFeeds}>
+													<RotateCw className="size-4" />
+													<span>Refresh</span>
 												</SidebarMenuButton>
 											</SidebarMenuItem>
 										</SidebarMenu>
