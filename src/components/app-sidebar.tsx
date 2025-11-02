@@ -256,6 +256,34 @@ export function AppSidebar({
 		onFeedSelect(null);
 	}, [selectedFeedId, allFeeds, allPosts, onFeedSelect]);
 
+	// Delete category (uncategorize all feeds in the category)
+	const handleDeleteCategory = React.useCallback(() => {
+		const selectedFeed = allFeeds.find((f) => f.id === selectedFeedId);
+		if (!selectedFeed || !selectedFeed.category) return;
+
+		const categoryToDelete = selectedFeed.category;
+
+		// Find all feeds in this category
+		const feedsInCategory = allFeeds.filter(
+			(f) => f.category === categoryToDelete,
+		);
+
+		// Set category to null for all feeds in this category
+		feedsInCategory.forEach((feed) => {
+			evoluInstance.update("rssFeed", {
+				id: feed.id as any,
+				category: null,
+			});
+		});
+
+		toast.success(
+			`Removed category "${categoryToDelete}" from ${feedsInCategory.length} feed${feedsInCategory.length !== 1 ? "s" : ""}`,
+		);
+
+		// Navigate back to all feeds
+		onFeedSelect(null);
+	}, [selectedFeedId, allFeeds, onFeedSelect]);
+
 	const refreshFeeds = React.useCallback(async () => {
 		if (allFeeds.length === 0) {
 			toast.error("No feeds to refresh");
@@ -335,9 +363,11 @@ export function AppSidebar({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Only run once on mount
 
-	const selectedFeedTitle = selectedFeedId
-		? allFeeds.find((f) => f.id === selectedFeedId)?.title || "Posts"
-		: "All Posts";
+	const selectedFeed = selectedFeedId
+		? allFeeds.find((f) => f.id === selectedFeedId)
+		: null;
+	const selectedFeedTitle = selectedFeed?.title || "All Posts";
+	const selectedFeedCategory = selectedFeed?.category || null;
 
 	return (
 		<>
@@ -377,7 +407,9 @@ export function AppSidebar({
 								onMarkAllAsRead={handleMarkAllAsRead}
 								onMarkAllAsUnread={handleMarkAllAsUnread}
 								onDeleteFeed={handleDeleteFeed}
+								onDeleteCategory={handleDeleteCategory}
 								selectedFeedId={selectedFeedId}
+								selectedFeedCategory={selectedFeedCategory}
 								className="border-0"
 							/>
 						</div>
@@ -416,7 +448,9 @@ export function AppSidebar({
 				onMarkAllAsRead={handleMarkAllAsRead}
 				onMarkAllAsUnread={handleMarkAllAsUnread}
 				onDeleteFeed={handleDeleteFeed}
+				onDeleteCategory={handleDeleteCategory}
 				selectedFeedId={selectedFeedId}
+				selectedFeedCategory={selectedFeedCategory}
 				className={`bg-sidebar text-sidebar-foreground hidden md:flex ${hidden ? "w-0 min-w-0 border-0 overflow-hidden" : "w-[320px] overflow-y-auto"}`}
 			/>
 		</>

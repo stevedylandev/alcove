@@ -1,4 +1,4 @@
-import { MoreVertical, Check, X, Trash2 } from "lucide-react";
+import { MoreVertical, Check, X, Trash2, FolderX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -29,7 +29,9 @@ interface PostsListProps {
 	onMarkAllAsRead: () => void;
 	onMarkAllAsUnread: () => void;
 	onDeleteFeed?: () => void;
+	onDeleteCategory?: () => void;
 	selectedFeedId?: string | null;
+	selectedFeedCategory?: string | null;
 	className?: string;
 }
 
@@ -44,7 +46,9 @@ export function PostsList({
 	onMarkAllAsRead,
 	onMarkAllAsUnread,
 	onDeleteFeed,
+	onDeleteCategory,
 	selectedFeedId,
+	selectedFeedCategory,
 	className = "",
 }: PostsListProps) {
 	return (
@@ -80,6 +84,15 @@ export function PostsList({
 									>
 										<Trash2 className="h-4 w-4 mr-2" />
 										Delete feed
+									</DropdownMenuItem>
+								)}
+								{selectedFeedCategory && onDeleteCategory && (
+									<DropdownMenuItem
+										onClick={onDeleteCategory}
+										className="text-destructive focus:text-destructive"
+									>
+										<FolderX className="h-4 w-4 mr-2" />
+										Delete category
 									</DropdownMenuItem>
 								)}
 							</DropdownMenuContent>
