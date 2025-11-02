@@ -20,12 +20,12 @@ import {
 
 interface Feed {
 	id: string;
-	title: string;
+	title: string | null;
 	category: string | null;
 }
 
 interface NavFeedsProps {
-	feeds: Feed[];
+	feeds: readonly Feed[];
 	selectedFeedId?: string | null;
 	onFeedSelect: (feedId: string | null) => void;
 }
@@ -50,7 +50,9 @@ export function NavFeeds({
 
 	// Sort feeds within each category alphabetically by title
 	Object.keys(feedsByCategory).forEach((category) => {
-		feedsByCategory[category].sort((a, b) => a.title.localeCompare(b.title));
+		feedsByCategory[category].sort((a, b) =>
+			(a.title || "").localeCompare(b.title || ""),
+		);
 	});
 
 	const categories = Object.keys(feedsByCategory).sort();
@@ -93,7 +95,7 @@ export function NavFeeds({
 												onClick={() => onFeedSelect(feed.id)}
 												isActive={selectedFeedId === feed.id}
 											>
-												<span>{feed.title}</span>
+												<span>{feed.title || "Untitled"}</span>
 											</SidebarMenuSubButton>
 										</SidebarMenuSubItem>
 									))}

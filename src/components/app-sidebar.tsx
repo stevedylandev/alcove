@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, RotateCw } from "lucide-react";
+import { Plus, RotateCw, MoreVertical, Check, X } from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import { NavFeeds } from "@/components/nav-feeds";
@@ -16,7 +16,6 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	useSidebar,
 } from "@/components/ui/sidebar";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -38,6 +43,7 @@ import {
 	allPostsQuery,
 	postsByFeedQuery,
 	allReadStatusesQuery,
+	allReadStatusesWithUnreadQuery,
 	useEvolu,
 	reset,
 } from "@/lib/evolu";
@@ -76,11 +82,10 @@ export function AppSidebar({
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [statusMessage, setStatusMessage] = React.useState("");
 
-	const { setOpen } = useSidebar();
-
 	const { insert, update } = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allReadStatuses = useQuery(allReadStatusesQuery);
+	const allReadStatusesWithUnread = useQuery(allReadStatusesWithUnreadQuery);
 
 	// Get posts based on selected feed
 	const allPosts = useQuery(allPostsQuery);
@@ -116,21 +121,92 @@ export function AppSidebar({
 	// Handle post selection and mark as read
 	const handlePostSelect = React.useCallback(
 		(postId: string) => {
-			// Mark as read if not already read
-			if (!isPostRead(postId)) {
-				const post = feedPosts.find((p) => p.id === postId);
-				if (post) {
-					insert("readStatus", {
-						postId: postId as any,
-						feedId: post.feedId,
-					});
-				}
+			// Mark as read
+			const existingStatus = allReadStatuses.find(
+				(status) => status.postId === postId,
+			);
+			const post = feedPosts.find((p) => p.id === postId);
+
+			if (existingStatus) {
+				// Update existing status to read
+				update("readStatus", {
+					id: existingStatus.id,
+					isRead: true,
+				});
+			} else if (post && post.feedId) {
+				// Create new read status
+				insert("readStatus", {
+					postId: postId as any,
+					feedId: post.feedId,
+					isRead: true,
+				});
 			}
+
 			// Call the original onPostSelect
 			onPostSelect(postId);
 		},
-		[isPostRead, feedPosts, insert, onPostSelect],
+		[allReadStatuses, feedPosts, insert, update, onPostSelect],
 	);
+
+	// Mark all visible posts as read
+	const handleMarkAllAsRead = React.useCallback(() => {
+		let markedCount = 0;
+		filteredPosts.forEach((post) => {
+			const existingStatus = allReadStatusesWithUnread.find(
+				(status) => status.postId === post.id,
+			);
+
+			if (existingStatus && !existingStatus.isRead) {
+				// Update existing status to read
+				update("readStatus", {
+					id: existingStatus.id,
+					isRead: true,
+				});
+				markedCount++;
+			} else if (!existingStatus && post.feedId) {
+				// Create new read status
+				insert("readStatus", {
+					postId: post.id as any,
+					feedId: post.feedId,
+					isRead: true,
+				});
+				markedCount++;
+			}
+		});
+		toast.success(
+			`Marked ${markedCount} post${markedCount !== 1 ? "s" : ""} as read`,
+		);
+	}, [filteredPosts, allReadStatusesWithUnread, insert, update]);
+
+	// Mark all visible posts as unread
+	const handleMarkAllAsUnread = React.useCallback(() => {
+		let unmarkedCount = 0;
+		filteredPosts.forEach((post) => {
+			const existingStatus = allReadStatusesWithUnread.find(
+				(status) => status.postId === post.id,
+			);
+
+			if (existingStatus && existingStatus.isRead) {
+				// Update existing status to unread
+				update("readStatus", {
+					id: existingStatus.id,
+					isRead: false,
+				});
+				unmarkedCount++;
+			} else if (!existingStatus && post.feedId) {
+				// Create new unread status
+				insert("readStatus", {
+					postId: post.id as any,
+					feedId: post.feedId,
+					isRead: false,
+				});
+				unmarkedCount++;
+			}
+		});
+		toast.success(
+			`Marked ${unmarkedCount} post${unmarkedCount !== 1 ? "s" : ""} as unread`,
+		);
+	}, [filteredPosts, allReadStatusesWithUnread, insert, update]);
 
 	async function addFeed() {
 		if (!urlInput.trim()) {
@@ -242,6 +318,10 @@ export function AppSidebar({
 				category: categoryInput || "Uncategorized",
 				dateUpdated: new Date().toISOString(),
 			});
+
+			if (!result.ok) {
+				throw new Error("Failed to insert feed");
+			}
 
 			// Process posts/entries
 			for (const post of posts) {
@@ -382,16 +462,35 @@ export function AppSidebar({
 			{/* Posts List Panel - Separate from main sidebar */}
 			<div className="bg-sidebar text-sidebar-foreground hidden md:flex overflow-y-scroll h-screen w-[320px] flex-col border-r">
 				<div className="gap-2 border-b p-3 flex flex-col">
-					<div className="flex w-full items-center justify-between">
+					<div className="flex w-full items-center justify-between gap-2">
 						<div className="text-foreground text-sm font-semibold truncate">
 							{selectedFeedId
 								? allFeeds.find((f) => f.id === selectedFeedId)?.title ||
 									"Posts"
 								: "All Posts"}
 						</div>
-						<span className="text-muted-foreground text-xs whitespace-nowrap ml-2">
-							{filteredPosts.length}
-						</span>
+						<div className="flex items-center gap-1">
+							<span className="text-muted-foreground text-xs whitespace-nowrap">
+								{filteredPosts.length}
+							</span>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+										<MoreVertical className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem onClick={handleMarkAllAsRead}>
+										<Check className="h-4 w-4 mr-2" />
+										Mark all as read
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={handleMarkAllAsUnread}>
+										<X className="h-4 w-4 mr-2" />
+										Mark all as unread
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
 					</div>
 					<Input
 						placeholder="Search..."
@@ -410,6 +509,7 @@ export function AppSidebar({
 							const isRead = isPostRead(post.id);
 							return (
 								<button
+									type="button"
 									key={post.id}
 									onClick={() => handlePostSelect(post.id)}
 									className={`hover:bg-sidebar-accent flex items-start gap-2 border-b px-3 py-3 text-sm text-left w-full last:border-b-0 transition-colors ${

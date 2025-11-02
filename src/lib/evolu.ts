@@ -33,7 +33,11 @@ export const feedsByCategoryQuery = evolu.createQuery((db) =>
 );
 
 export const allReadStatusesQuery = evolu.createQuery((db) =>
-	db.selectFrom("readStatus").selectAll().where("isDeleted", "is", null),
+	db.selectFrom("readStatus").selectAll().where("isRead", "=", 1),
+);
+
+export const allReadStatusesWithUnreadQuery = evolu.createQuery((db) =>
+	db.selectFrom("readStatus").selectAll(),
 );
 
 export function reset() {

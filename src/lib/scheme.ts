@@ -4,6 +4,7 @@ import {
 	NonEmptyString,
 	NonEmptyString1000,
 	nullOr,
+	SqliteBoolean,
 } from "@evolu/common";
 
 // RSS Feed ID
@@ -43,7 +44,7 @@ export const Schema = {
 		id: id("ReadStatus"),
 		feedId: RSSFeedId,
 		postId: RSSPostId,
-		isDeleted: nullOr(NonEmptyString),
+		isRead: SqliteBoolean,
 	},
 	userPreferences: {
 		id: id("UserPreferences"),
