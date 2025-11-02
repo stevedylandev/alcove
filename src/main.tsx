@@ -5,12 +5,14 @@ import { EvoluProvider } from "@evolu/react";
 import "./index.css";
 import App from "./App.tsx";
 import { evolu } from "./lib/evolu.ts";
+import { Toaster } from "./components/ui/sonner.tsx";
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<EvoluProvider value={evolu}>
 			<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 				<App />
+				<Toaster />
 			</ThemeProvider>
 		</EvoluProvider>
 	</StrictMode>,

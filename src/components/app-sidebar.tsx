@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-	ChartNoAxesColumnIcon,
-	ChartNoAxesGanttIcon,
-	CircleSlash2,
-	Command,
-	Plus,
-	RotateCw,
-} from "lucide-react";
+import { Plus, RotateCw } from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import { NavFeeds } from "@/components/nav-feeds";
@@ -20,7 +13,6 @@ import {
 	SidebarGroupContent,
 	SidebarGroupLabel,
 	SidebarHeader,
-	SidebarInput,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
@@ -40,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
 	allFeedsQuery,
 	allPostsQuery,
@@ -77,9 +70,12 @@ export function AppSidebar({
 }: AppSidebarProps) {
 	const [urlInput, setUrlInput] = React.useState("");
 	const [categoryInput, setCategoryInput] = React.useState("");
-	const { setOpen } = useSidebar();
 	const [dialogOpen, setDialogOpen] = React.useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");
+	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
+	const [statusMessage, setStatusMessage] = React.useState("");
+
+	const { setOpen } = useSidebar();
 
 	const { insert, update } = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
@@ -108,6 +104,14 @@ export function AppSidebar({
 	}, [feedPosts, searchQuery]);
 
 	async function addFeed() {
+		if (!urlInput.trim()) {
+			setStatusMessage("Please enter a URL");
+			return;
+		}
+
+		setIsAddingFeed(true);
+		setStatusMessage("");
+
 		try {
 			// Try to discover feeds if the URL doesn't look like a direct feed URL
 			let feedUrl = urlInput;
@@ -157,9 +161,10 @@ export function AppSidebar({
 				}
 
 				if (!xmlData) {
-					alert(
+					setStatusMessage(
 						"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
 					);
+					setIsAddingFeed(false);
 					return;
 				}
 			} else {
@@ -179,6 +184,7 @@ export function AppSidebar({
 					xmlData = await xmlFetch.text();
 				}
 			}
+
 			const parsedXmlData = await parser.parse(xmlData);
 			console.log(parsedXmlData);
 
@@ -226,11 +232,24 @@ export function AppSidebar({
 						post["content:encoded"] || post.content || "Please open on the web",
 				});
 			}
+
+			toast.success(
+				`Successfully added "${feedData.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
+			);
+
 			setUrlInput("");
 			setCategoryInput("");
+			setStatusMessage("");
 			setDialogOpen(false);
 		} catch (error) {
-			console.log(error);
+			console.error("Error adding feed:", error);
+			setStatusMessage(
+				error instanceof Error
+					? error.message
+					: "Failed to add feed. Please check the URL and try again.",
+			);
+		} finally {
+			setIsAddingFeed(false);
 		}
 	}
 
@@ -297,6 +316,7 @@ export function AppSidebar({
 								value={urlInput}
 								onChange={(e) => setUrlInput(e.target.value)}
 								placeholder="https://example.com"
+								disabled={isAddingFeed}
 							/>
 							<p className="text-xs text-muted-foreground">
 								We'll automatically discover the RSS feed for you
@@ -310,15 +330,21 @@ export function AppSidebar({
 								value={categoryInput}
 								onChange={(e) => setCategoryInput(e.target.value)}
 								placeholder="e.g., Tech, News, Blogs"
+								disabled={isAddingFeed}
 							/>
 						</div>
+						{statusMessage && (
+							<div className="text-sm text-primary">{statusMessage}</div>
+						)}
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
-							<Button variant="outline">Cancel</Button>
+							<Button variant="outline" disabled={isAddingFeed}>
+								Cancel
+							</Button>
 						</DialogClose>
-						<Button onClick={addFeed} type="submit">
-							Submit
+						<Button onClick={addFeed} type="submit" disabled={isAddingFeed}>
+							{isAddingFeed ? "Adding..." : "Submit"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
