@@ -13,3 +13,5 @@ Endless rambling of things to fix and improve
 - [x] Collapse both side bars if desired?
 - [x] Update logo in top left
 - [x] Marking Read and Unread
+- [ ] Change Reset to "Log out" or something along those lines
+- [ ] Add About to settings menu?

@@ -67,8 +67,7 @@ export function NavFeeds({
 						onClick={() => onFeedSelect(null)}
 						isActive={selectedFeedId === null}
 					>
-						<Rss className="h-4 w-4" />
-						<span>All Feeds</span>
+						All Feeds
 					</SidebarMenuButton>
 				</SidebarMenuItem>
 
