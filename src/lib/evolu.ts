@@ -17,7 +17,7 @@ export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
 	reloadUrl: "/",
 	encryptionKey: authResult?.owner?.encryptionKey,
 	externalAppOwner: authResult?.owner,
-	transports: [{ type: "WebSocket", url: "ws://localhost:4000" }],
+	transports: [{ type: "WebSocket", url: import.meta.env.VITE_RELAY_URL }],
 });
 
 export const useEvolu = createUseEvolu(evolu);
