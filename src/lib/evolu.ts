@@ -17,7 +17,12 @@ export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
 	reloadUrl: "/",
 	encryptionKey: authResult?.owner?.encryptionKey,
 	externalAppOwner: authResult?.owner,
-	transports: [{ type: "WebSocket", url: import.meta.env.VITE_RELAY_URL }],
+	transports: [
+		{
+			type: "WebSocket",
+			url: "wss://relay.alcove.tools",
+		},
+	],
 });
 
 export const useEvolu = createUseEvolu(evolu);
