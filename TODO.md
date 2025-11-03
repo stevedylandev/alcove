@@ -15,3 +15,5 @@ Endless rambling of things to fix and improve
 - [x] Marking Read and Unread
 - [ ] Change Reset to "Log out" or something along those lines
 - [ ] Add About to settings menu?
+- [ ] Add Home screen with start button + acknowledgements
+- [ ] Import + Export OPML in settings
