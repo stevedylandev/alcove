@@ -6,8 +6,10 @@ import {
 	CreditCard,
 	Eye,
 	EyeOff,
+	Info,
 	LogOut,
 	Sparkles,
+	Trash2,
 	Upload,
 } from "lucide-react";
 import {
@@ -20,9 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { use, useState } from "react";
-import { useEvolu } from "@/lib/evolu";
+import { useEvolu, reset } from "@/lib/evolu";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -44,6 +45,7 @@ export function NavUser() {
 	const { isMobile } = useSidebar();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+	const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 	const [backupPhrase, setBackupPhrase] = useState<Mnemonic | null>();
 	const [isRevealed, setIsRevealed] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
@@ -122,6 +124,13 @@ export function NavUser() {
 								sideOffset={4}
 							>
 								<DropdownMenuGroup>
+									<DropdownMenuItem onClick={() => setIsAboutDialogOpen(true)}>
+										<Info />
+										About
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
 									<DialogTrigger asChild>
 										<DropdownMenuItem>
 											<BookKey />
@@ -136,24 +145,9 @@ export function NavUser() {
 									</DropdownMenuItem>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
-								<DropdownMenuGroup>
-									<DropdownMenuItem>
-										<BadgeCheck />
-										Account
-									</DropdownMenuItem>
-									<DropdownMenuItem>
-										<CreditCard />
-										Billing
-									</DropdownMenuItem>
-									<DropdownMenuItem>
-										<Bell />
-										Notifications
-									</DropdownMenuItem>
-								</DropdownMenuGroup>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem>
-									<LogOut />
-									Log out
+								<DropdownMenuItem onClick={reset}>
+									<Trash2 />
+									Clear Data
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -231,6 +225,52 @@ export function NavUser() {
 							<Upload className="h-4 w-4 mr-2" />
 							Restore Account
 						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>About</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4">
+						<p className="text-sm text-muted-foreground">
+							Alcove is built on two principles: privacy, and freedom of speech.
+							Those two things are becoming harder to find these days, yet blogs
+							and RSS feeds provides a way out. As long as someone is publishing
+							and someone else is listening, these two fundamentals can help
+							keep free speech alive. Alcove accomplishes privacy through a
+							"can't be evil" tech stack, which you can read more about{" "}
+							<a className="underline" target="_blank" rel="noreferrer" href="">
+								here
+							</a>
+							. TLDR: all of your feeds and posts that you read are encrypted
+							locally and synced via cryptographic keypairs. Even if we wanted
+							to read your stuff, we can't.
+						</p>
+						<p className="text-sm text-muted-foreground">
+							Due to how the encryption works, it is critical that you backup
+							your account passphrase to a secure location like a password
+							manager. If you clear your local browser data there is no way for
+							us to recover your account or feeds, and you will need to make a
+							new one. Back it up now in the settings page!
+						</p>
+						<p className="text-sm text-muted-foreground">
+							Alcove is{" "}
+							<a className="underline" href="" target="_blank" rel="noreferrer">
+								MIT open sourced
+							</a>{" "}
+							and run by{" "}
+							<a
+								className="underline"
+								href="https://stevedylan.dev"
+								target="_blank"
+								rel="noreferrer"
+							>
+								Steve
+							</a>
+							.
+						</p>
 					</div>
 				</DialogContent>
 			</Dialog>

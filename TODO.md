@@ -13,7 +13,7 @@ Endless rambling of things to fix and improve
 - [x] Collapse both side bars if desired?
 - [x] Update logo in top left
 - [x] Marking Read and Unread
-- [ ] Change Reset to "Log out" or something along those lines
-- [ ] Add About to settings menu?
+- [x] Change Reset to "Log out" or something along those lines
+- [x] Add About to settings menu?
 - [ ] Add Home screen with start button + acknowledgements
 - [ ] Import + Export OPML in settings
