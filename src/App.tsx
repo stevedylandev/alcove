@@ -25,10 +25,12 @@ import {
 } from "@/components/ui/dialog";
 import { Upload, FileUp } from "lucide-react";
 import { Mnemonic } from "@evolu/common";
+import { LoadingScreen } from "@/components/loading-screen";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
-	const hasFeeds = allFeeds.length > 0;
+	const hasFeeds = allFeeds.rows?.length > 0;
+	const [isInitialLoading, setIsInitialLoading] = React.useState(true);
 	const [urlInput, setUrlInput] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [errorMessage, setErrorMessage] = React.useState("");
@@ -38,6 +40,18 @@ function App() {
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	const evolu = useEvolu();
+
+	// Handle initial loading state
+	React.useEffect(() => {
+		// Wait for the query to be loaded (not pending)
+		if (!allFeeds.isLoading) {
+			// Add a small delay to prevent flash
+			const timer = setTimeout(() => {
+				setIsInitialLoading(false);
+			}, 300);
+			return () => clearTimeout(timer);
+		}
+	}, [allFeeds.isLoading]);
 
 	function handleRestoreDialogOpenChange(open: boolean) {
 		setIsRestoreDialogOpen(open);
@@ -210,6 +224,10 @@ function App() {
 		} finally {
 			setIsAddingFeed(false);
 		}
+	}
+
+	if (isInitialLoading) {
+		return <LoadingScreen />;
 	}
 
 	return (
