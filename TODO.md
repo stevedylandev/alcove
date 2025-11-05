@@ -16,4 +16,4 @@ Endless rambling of things to fix and improve
 - [x] Change Reset to "Log out" or something along those lines
 - [x] Add About to settings menu?
 - [x] Add Home screen with start button + acknowledgements
-- [ ] Import + Export OPML in settings
+- [x] Import + Export OPML in settings
