@@ -34,9 +34,6 @@ function Dashboard() {
 	const [selectedFeedId, setSelectedFeedId] = React.useState<string | null>(
 		null,
 	);
-	const [selectedPostId, setSelectedPostId] = React.useState<string | null>(
-		null,
-	);
 	const mainContentRef = React.useRef<HTMLDivElement>(null);
 
 	const evolu = useEvolu();
@@ -45,6 +42,23 @@ function Dashboard() {
 	const allReadStatuses = useQuery(allReadStatusesQuery);
 	const allReadStatusesWithUnread = useQuery(allReadStatusesWithUnreadQuery);
 	console.log(allPosts);
+
+	// Get the first post (most recent) to use as default
+	const firstPostId = React.useMemo(() => {
+		if (allPosts.length === 0) return null;
+
+		const sortedPosts = [...allPosts].sort((a, b) => {
+			if (!a.publishedDate) return 1;
+			if (!b.publishedDate) return -1;
+			return b.publishedDate.localeCompare(a.publishedDate);
+		});
+
+		return sortedPosts[0]?.id || null;
+	}, [allPosts]);
+
+	const [selectedPostId, setSelectedPostId] = React.useState<string | null>(
+		firstPostId,
+	);
 
 	const selectedFeed = selectedFeedId
 		? allFeeds.find((f) => f.id === selectedFeedId)
