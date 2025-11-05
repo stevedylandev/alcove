@@ -1,5 +1,10 @@
-import type { RSSFeedId } from "./scheme";
+import { allFeedsQuery } from "./evolu";
 
+type Feed = typeof allFeedsQuery.Row;
+
+/**
+ * Type for parsed OPML feed data
+ */
 export interface OPMLFeed {
 	title: string;
 	feedUrl: string;
@@ -7,22 +12,12 @@ export interface OPMLFeed {
 	category?: string;
 }
 
-export interface RSSFeed {
-	id: RSSFeedId;
-	feedUrl: string;
-	title: string;
-	description: string | null;
-	category: string | null;
-	dateUpdated: string | null;
-	isDeleted: number;
-}
-
 /**
  * Generate OPML XML from feeds
  */
-export function generateOPML(feeds: readonly RSSFeed[]): string {
+export function generateOPML(feeds: readonly Feed[]): string {
 	const now = new Date().toUTCString();
-	const categories = new Map<string, RSSFeed[]>();
+	const categories = new Map<string, Feed[]>();
 
 	// Group feeds by category
 	for (const feed of feeds) {
@@ -75,7 +70,6 @@ export function parseOPML(opmlContent: string): OPMLFeed[] {
 	const outlines = xmlDoc.querySelectorAll("outline");
 
 	for (const outline of outlines) {
-		const type = outline.getAttribute("type");
 		const xmlUrl = outline.getAttribute("xmlUrl");
 
 		// If this outline has an xmlUrl, it's a feed

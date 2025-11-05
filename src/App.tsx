@@ -31,6 +31,9 @@ function App() {
 	const allFeeds = useQuery(allFeedsQuery);
 	const hasFeeds = allFeeds.length > 0;
 	const [isInitialLoading, setIsInitialLoading] = React.useState(true);
+	const [isInitialized, setIsInitialized] = React.useState(() => {
+		return localStorage.getItem("alcove_isInitialized") === "true";
+	});
 	const [urlInput, setUrlInput] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [errorMessage, setErrorMessage] = React.useState("");
@@ -49,6 +52,14 @@ function App() {
 		}, 500);
 		return () => clearTimeout(timer);
 	}, []);
+
+	// Mark as initialized when feeds are added
+	React.useEffect(() => {
+		if (allFeeds.length > 0 && !isInitialized) {
+			localStorage.setItem("alcove_isInitialized", "true");
+			setIsInitialized(true);
+		}
+	}, [allFeeds.length, isInitialized]);
 
 	function handleRestoreDialogOpenChange(open: boolean) {
 		setIsRestoreDialogOpen(open);
@@ -103,6 +114,10 @@ function App() {
 						category: feed.category || "Uncategorized",
 						dateUpdated: new Date().toISOString(),
 					});
+
+					if (!result.ok) {
+						continue;
+					}
 
 					for (const post of posts) {
 						evolu.insert("rssPost", {

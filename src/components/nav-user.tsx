@@ -21,12 +21,7 @@ import { Button } from "@/components/ui/button";
 import { use, useState, useRef } from "react";
 import { useEvolu, reset, allFeedsQuery } from "@/lib/evolu";
 import { useQuery } from "@evolu/react";
-import {
-	generateOPML,
-	parseOPML,
-	downloadOPML,
-	type OPMLFeed,
-} from "@/lib/opml";
+import { generateOPML, parseOPML, downloadOPML } from "@/lib/opml";
 import {
 	fetchFeedWithFallback,
 	parseFeedXml,
@@ -127,6 +122,10 @@ export function NavUser() {
 						category: feed.category || "Uncategorized",
 						dateUpdated: new Date().toISOString(),
 					});
+
+					if (!result.ok) {
+						continue;
+					}
 
 					for (const post of posts) {
 						evolu.insert("rssPost", {
