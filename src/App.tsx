@@ -15,6 +15,15 @@ import {
 	extractPostContent,
 	extractPostDate,
 } from "@/lib/feed-operations";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Upload } from "lucide-react";
+import { Mnemonic } from "@evolu/common";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
@@ -22,8 +31,26 @@ function App() {
 	const [urlInput, setUrlInput] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [errorMessage, setErrorMessage] = React.useState("");
+	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = React.useState(false);
+	const [restoreMnemonic, setRestoreMnemonic] = React.useState("");
 
 	const evolu = useEvolu();
+
+	function handleRestoreDialogOpenChange(open: boolean) {
+		setIsRestoreDialogOpen(open);
+		if (!open) {
+			setRestoreMnemonic("");
+		}
+	}
+
+	function handleRestore() {
+		if (restoreMnemonic.trim()) {
+			evolu.restoreAppOwner(restoreMnemonic as Mnemonic);
+			setIsRestoreDialogOpen(false);
+			setRestoreMnemonic("");
+			toast.success("Account restored successfully");
+		}
+	}
 
 	async function addFeed() {
 		if (!urlInput.trim()) {
@@ -132,9 +159,47 @@ function App() {
 								{errorMessage}
 							</div>
 						)}
+						<Button
+							variant="outline"
+							onClick={() => setIsRestoreDialogOpen(true)}
+							className="w-full"
+						>
+							<Upload className="h-4 w-4 mr-2" />
+							Restore from Backup
+						</Button>
 					</div>
 				</div>
 			)}
+			<Dialog
+				open={isRestoreDialogOpen}
+				onOpenChange={handleRestoreDialogOpenChange}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Restore from Backup</DialogTitle>
+						<DialogDescription>
+							Enter your backup phrase to restore your account and access your
+							encrypted data.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4">
+						<textarea
+							className="w-full p-4 bg-muted rounded-lg font-mono text-sm resize-none min-h-[100px]"
+							placeholder="Enter your backup phrase here..."
+							value={restoreMnemonic}
+							onChange={(e) => setRestoreMnemonic(e.target.value)}
+						/>
+						<Button
+							onClick={handleRestore}
+							disabled={!restoreMnemonic.trim()}
+							className="w-full"
+						>
+							<Upload className="h-4 w-4 mr-2" />
+							Restore Account
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</main>
 	);
 }

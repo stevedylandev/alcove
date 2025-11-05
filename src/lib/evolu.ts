@@ -1,27 +1,20 @@
-import * as Evolu from "@evolu/common";
 import { evoluReactWebDeps } from "@evolu/react-web";
 import { Schema, type RSSFeedId } from "./scheme.ts";
 import { createUseEvolu } from "@evolu/react";
+import { createEvolu, SimpleName, sqliteTrue } from "@evolu/common";
 
-const service = "alcove";
-
-// Initialize authentication
-const authResult = await evoluReactWebDeps.localAuth.login(undefined, {
-	service,
-});
-
-export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
-	name: Evolu.SimpleName.orThrow(
-		`${service}-${authResult?.owner?.id ?? "guest"}`,
-	),
+export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
+	name: SimpleName.orThrow("alcove"),
 	reloadUrl: "/",
-	encryptionKey: authResult?.owner?.encryptionKey,
-	externalAppOwner: authResult?.owner,
 	transports: [
 		{
 			type: "WebSocket",
 			url: "wss://relay.alcove.tools",
 		},
+		// {
+		// 	type: "WebSocket",
+		// 	url: "ws://localhost:4000",
+		// },
 	],
 });
 
@@ -38,10 +31,7 @@ evolu.subscribeError(() => {
 });
 
 export const allFeedsQuery = evolu.createQuery((db) =>
-	db
-		.selectFrom("rssFeed")
-		.selectAll()
-		.where("isDeleted", "is not", Evolu.sqliteTrue),
+	db.selectFrom("rssFeed").selectAll().where("isDeleted", "is not", sqliteTrue),
 );
 
 export const postsByFeedQuery = (feedId: string) =>
@@ -50,7 +40,7 @@ export const postsByFeedQuery = (feedId: string) =>
 			.selectFrom("rssPost")
 			.selectAll()
 			.where("feedId", "=", feedId as RSSFeedId)
-			.where("isDeleted", "is not", Evolu.sqliteTrue)
+			.where("isDeleted", "is not", sqliteTrue)
 			.orderBy("id", "desc"),
 	);
 
@@ -58,7 +48,7 @@ export const allPostsQuery = evolu.createQuery((db) =>
 	db
 		.selectFrom("rssPost")
 		.selectAll()
-		.where("isDeleted", "is not", Evolu.sqliteTrue)
+		.where("isDeleted", "is not", sqliteTrue)
 		.orderBy("id", "desc"),
 );
 
@@ -66,7 +56,7 @@ export const feedsByCategoryQuery = evolu.createQuery((db) =>
 	db
 		.selectFrom("rssFeed")
 		.selectAll()
-		.where("isDeleted", "is not", Evolu.sqliteTrue)
+		.where("isDeleted", "is not", sqliteTrue)
 		.orderBy("category", "asc"),
 );
 
