@@ -20,8 +20,8 @@ export function MobilePostsHeader({
 			>
 				<ChevronLeft className="size-5" />
 			</Button>
-			<div className="flex-1 text-left text-xl">
-				<span className="truncate font-bold">{feedTitle}</span>
+			<div className="flex-1 text-left text-lg truncate">
+				<span className="font-bold">{feedTitle}</span>
 			</div>
 		</div>
 	);
