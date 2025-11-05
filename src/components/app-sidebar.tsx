@@ -65,7 +65,28 @@ export function AppSidebar({
 	// Get posts based on selected feed
 	const allPosts = useQuery(allPostsQuery);
 	const feedPostsQuery = useQuery(postsByFeedQuery(selectedFeedId || ""));
-	const feedPosts = selectedFeedId ? feedPostsQuery : allPosts;
+
+	// Check if a post is read
+	const isPostRead = React.useCallback(
+		(postId: string) => {
+			return allReadStatuses.some((status) => status.postId === postId);
+		},
+		[allReadStatuses],
+	);
+
+	// Determine which posts to show based on selection
+	const feedPosts = React.useMemo(() => {
+		if (selectedFeedId === "unread") {
+			// Show only unread posts from all feeds
+			return allPosts.filter((post) => !isPostRead(post.id));
+		} else if (selectedFeedId) {
+			// Show posts from specific feed
+			return feedPostsQuery;
+		} else {
+			// Show all posts
+			return allPosts;
+		}
+	}, [selectedFeedId, allPosts, feedPostsQuery, isPostRead]);
 
 	// Filter and sort posts by search query and date
 	const filteredPosts = React.useMemo(() => {
@@ -84,14 +105,6 @@ export function AppSidebar({
 			return b.publishedDate.localeCompare(a.publishedDate);
 		});
 	}, [feedPosts, searchQuery]);
-
-	// Check if a post is read
-	const isPostRead = React.useCallback(
-		(postId: string) => {
-			return allReadStatuses.some((status) => status.postId === postId);
-		},
-		[allReadStatuses],
-	);
 
 	// Handle feed selection - on mobile, navigate to posts view
 	const handleFeedSelect = React.useCallback(
@@ -351,10 +364,12 @@ export function AppSidebar({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Only run once on mount
 
-	const selectedFeed = selectedFeedId
-		? allFeeds.find((f) => f.id === selectedFeedId)
-		: null;
-	const selectedFeedTitle = selectedFeed?.title || "All Posts";
+	const selectedFeed =
+		selectedFeedId && selectedFeedId !== "unread"
+			? allFeeds.find((f) => f.id === selectedFeedId)
+			: null;
+	const selectedFeedTitle =
+		selectedFeedId === "unread" ? "Unread" : selectedFeed?.title || "All Posts";
 	const selectedFeedCategory = selectedFeed?.category || null;
 
 	return (

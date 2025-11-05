@@ -69,6 +69,16 @@ export function NavFeeds({
 					</SidebarMenuButton>
 				</SidebarMenuItem>
 
+				{/* Unread option */}
+				<SidebarMenuItem>
+					<SidebarMenuButton
+						onClick={() => onFeedSelect("unread")}
+						isActive={selectedFeedId === "unread"}
+					>
+						Unread
+					</SidebarMenuButton>
+				</SidebarMenuItem>
+
 				{/* Categories with feeds */}
 				{categories.map((category) => (
 					<Collapsible
