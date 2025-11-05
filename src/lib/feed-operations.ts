@@ -1,7 +1,14 @@
 import { XMLParser } from "fast-xml-parser";
 import { COMMON_FEED_PATHS } from "./feed-discovery";
 
-const parser = new XMLParser();
+const parser = new XMLParser({
+	ignoreAttributes: false,
+	attributeNamePrefix: "@_",
+	textNodeName: "#text",
+	cdataPropName: "__cdata",
+	parseAttributeValue: true,
+	trimValues: true,
+});
 
 export interface ParsedFeedData {
 	feedData: any;
@@ -30,7 +37,15 @@ export async function fetchFeedWithFallback(url: string): Promise<string> {
  * Parses XML data and determines if it's RSS or Atom feed
  */
 export function parseFeedXml(xmlData: string): ParsedFeedData {
-	const parsedXmlData = parser.parse(xmlData);
+	let parsedXmlData: any;
+
+	try {
+		parsedXmlData = parser.parse(xmlData);
+	} catch (error) {
+		throw new Error(
+			`XML parsing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+		);
+	}
 
 	// Determine if it's RSS or Atom feed
 	let feedData: any;
@@ -40,15 +55,35 @@ export function parseFeedXml(xmlData: string): ParsedFeedData {
 	if (parsedXmlData.rss) {
 		// RSS feed
 		feedData = parsedXmlData.rss.channel;
-		posts = feedData.item || [];
+		if (!feedData) {
+			throw new Error("RSS feed missing channel element");
+		}
+		const items = feedData.item || [];
+		// Ensure posts is always an array (single item might not be in array)
+		posts = Array.isArray(items) ? items : items ? [items] : [];
 	} else if (parsedXmlData.feed) {
 		// Atom feed
 		feedData = parsedXmlData.feed;
-		posts = feedData.entry || [];
+		const entries = feedData.entry || [];
+		// Ensure posts is always an array (single entry might not be in array)
+		posts = Array.isArray(entries) ? entries : entries ? [entries] : [];
 		isAtom = true;
+	} else if (parsedXmlData["rdf:RDF"]) {
+		// RDF/RSS 1.0 feed
+		feedData = parsedXmlData["rdf:RDF"].channel;
+		const items = parsedXmlData["rdf:RDF"].item || [];
+		posts = Array.isArray(items) ? items : items ? [items] : [];
+		isAtom = false;
 	} else {
-		throw new Error("Unsupported feed format");
+		// Log available root elements for debugging
+		const rootKeys = Object.keys(parsedXmlData);
+		throw new Error(
+			`Unsupported feed format. Found root elements: ${rootKeys.join(", ")}`,
+		);
 	}
+
+	// Filter out empty objects from posts array
+	posts = posts.filter((post) => post && Object.keys(post).length > 0);
 
 	return { feedData, posts, isAtom };
 }
@@ -63,11 +98,8 @@ export async function discoverFeed(websiteUrl: string): Promise<{
 	const urlObj = new URL(websiteUrl);
 	const origin = urlObj.origin;
 
-	console.log("Trying to discover feed from:", origin);
-
 	for (const path of COMMON_FEED_PATHS) {
 		const testUrl = `${origin}${path}`;
-		console.log("Testing:", testUrl);
 
 		try {
 			// Use CORS proxy to avoid CORS issues
@@ -83,12 +115,10 @@ export async function discoverFeed(websiteUrl: string): Promise<{
 					text.includes("<rss") ||
 					text.includes("<feed")
 				) {
-					console.log("Found feed at:", testUrl);
 					return { feedUrl: testUrl, xmlData: text };
 				}
 			}
 		} catch (error) {
-			console.log("Failed to fetch:", testUrl, error);
 			continue;
 		}
 	}
@@ -113,11 +143,33 @@ export function looksLikeFeedUrl(url: string): boolean {
  */
 export function extractPostLink(post: any, isAtom: boolean): string {
 	if (isAtom) {
-		return typeof post.link === "string"
-			? post.link || post.id
-			: post.link?.[0] || post.id;
+		// Handle Atom link which can be string, object, or array
+		if (typeof post.link === "string") {
+			return post.link || post.id || "#";
+		} else if (Array.isArray(post.link)) {
+			// Find 'alternate' link or use first link
+			const alternateLink = post.link.find(
+				(l: any) => l["@_rel"] === "alternate" || !l["@_rel"],
+			);
+			return (
+				alternateLink?.["@_href"] || post.link[0]?.["@_href"] || post.id || "#"
+			);
+		} else if (post.link && typeof post.link === "object") {
+			return post.link["@_href"] || post.id || "#";
+		}
+		return post.id || "#";
 	}
-	return post.link || post.id;
+
+	// RSS feed
+	const link = post.link || post.guid || post.id;
+	if (!link) return "#";
+
+	// Handle link as object (sometimes RSS parsers do this)
+	if (typeof link === "object") {
+		return link["#text"] || link.__cdata || "#";
+	}
+
+	return String(link);
 }
 
 /**
@@ -129,21 +181,128 @@ export function extractPostAuthor(
 	feedTitle: string,
 ): string {
 	if (isAtom) {
-		return post.author?.name || feedTitle;
+		// Atom can have author as object with name property
+		const author = post.author;
+		if (typeof author === "object" && author !== null) {
+			return author.name || author["#text"] || feedTitle;
+		}
+		return author || feedTitle;
 	}
-	return post.author || feedTitle;
+
+	// RSS feed
+	const author = post.author || post["dc:creator"] || post.creator;
+	if (!author) return feedTitle;
+
+	// Handle author as object
+	if (typeof author === "object") {
+		return author["#text"] || author.__cdata || feedTitle;
+	}
+
+	return String(author);
 }
 
 /**
  * Extracts content from RSS or Atom post entry
  */
 export function extractPostContent(post: any): string {
-	return post["content:encoded"] || post.content || "Please open on the web";
+	// Try various content fields in order of preference
+	const content =
+		post["content:encoded"] || post.content || post.description || post.summary;
+
+	// Handle different content structures
+	if (typeof content === "string") {
+		const trimmed = content.trim();
+		// If content is too short or empty, return default message
+		return trimmed.length > 0 ? trimmed : "Please open on the web";
+	} else if (content && typeof content === "object") {
+		// Handle CDATA or nested text
+		const extracted = content.__cdata || content["#text"] || "";
+		const trimmed = String(extracted).trim();
+		return trimmed.length > 0 ? trimmed : "Please open on the web";
+	}
+
+	// No content found - this is fine for link-only feeds
+	return "Please open on the web";
 }
 
 /**
  * Extracts published date from RSS or Atom post entry
  */
 export function extractPostDate(post: any): string {
-	return new Date(post.pubDate || post.updated).toISOString();
+	try {
+		const dateValue = post.pubDate || post.updated || post.published;
+		if (!dateValue) {
+			return new Date().toISOString(); // Use current date if no date found
+		}
+		const parsedDate = new Date(dateValue);
+		// Check if date is valid
+		if (isNaN(parsedDate.getTime())) {
+			return new Date().toISOString();
+		}
+		return parsedDate.toISOString();
+	} catch {
+		return new Date().toISOString();
+	}
+}
+
+/**
+ * Extract string value from various data types
+ */
+function extractStringValue(value: any): string {
+	if (!value) return "";
+	if (typeof value === "string") return value;
+
+	// Handle objects that might contain text
+	if (typeof value === "object") {
+		// Try common text properties
+		if (value.__cdata) return String(value.__cdata);
+		if (value["#text"]) return String(value["#text"]);
+		if (value.text) return String(value.text);
+		// Last resort: try to convert to string
+		return "";
+	}
+
+	// For numbers, booleans, etc.
+	return String(value);
+}
+
+/**
+ * Safely truncate a string to a maximum length
+ */
+export function truncateString(str: any, maxLength: number): string {
+	const strValue = extractStringValue(str);
+	if (!strValue) return "";
+	const trimmed = strValue.trim();
+	if (trimmed.length <= maxLength) return trimmed;
+	return trimmed.substring(0, maxLength - 3) + "...";
+}
+
+/**
+ * Validate and sanitize feed data for insertion
+ */
+export function sanitizeFeedData(feedData: any, feed?: any) {
+	// Extract title from feedData or feed, handling various formats
+	const titleValue = feedData?.title || feed?.title || "Untitled Feed";
+	const descValue =
+		feedData?.description || feedData?.subtitle || feed?.description || "";
+
+	return {
+		title: truncateString(titleValue, 200),
+		description: truncateString(descValue, 1000),
+	};
+}
+
+/**
+ * Validate and sanitize post data for insertion
+ */
+export function sanitizePostData(
+	post: any,
+	isAtom: boolean,
+	feedTitle: string,
+) {
+	return {
+		title: truncateString(post.title || "Untitled", 1000),
+		author: truncateString(extractPostAuthor(post, isAtom, feedTitle), 200),
+		link: truncateString(extractPostLink(post, isAtom), 1000),
+	};
 }

@@ -14,6 +14,8 @@ import {
 	extractPostAuthor,
 	extractPostContent,
 	extractPostDate,
+	sanitizeFeedData,
+	sanitizePostData,
 } from "@/lib/feed-operations";
 import { parseOPML } from "@/lib/opml";
 import {
@@ -91,7 +93,8 @@ function App() {
 			});
 
 			let successCount = 0;
-			let failCount = 0;
+			const failedFeeds: Array<{ title: string; url: string; error: string }> =
+				[];
 
 			for (let i = 0; i < opmlFeeds.length; i++) {
 				const feed = opmlFeeds[i];
@@ -104,28 +107,34 @@ function App() {
 					const xmlData = await fetchFeedWithFallback(feed.feedUrl);
 					const { feedData, posts, isAtom } = parseFeedXml(xmlData);
 
+					// Sanitize feed data to meet schema constraints
+					const sanitizedFeed = sanitizeFeedData(feedData, feed);
+
 					const result = evolu.insert("rssFeed", {
 						feedUrl: feed.feedUrl,
-						title: feed.title,
-						description:
-							feed.description ||
-							feedData.description ||
-							feedData.subtitle ||
-							"",
+						title: sanitizedFeed.title,
+						description: sanitizedFeed.description || null,
 						category: feed.category || "Uncategorized",
 						dateUpdated: new Date().toISOString(),
 					});
 
 					if (!result.ok) {
-						continue;
+						throw new Error("Failed to insert feed into database");
 					}
 
 					for (const post of posts) {
+						// Sanitize post data to meet schema constraints
+						const sanitizedPost = sanitizePostData(
+							post,
+							isAtom,
+							feedData.title,
+						);
+
 						evolu.insert("rssPost", {
-							title: post.title,
-							author: extractPostAuthor(post, isAtom, feedData.title),
+							title: sanitizedPost.title,
+							author: sanitizedPost.author || null,
 							publishedDate: extractPostDate(post),
-							link: extractPostLink(post, isAtom),
+							link: sanitizedPost.link,
 							feedId: result.value.id,
 							content: extractPostContent(post),
 						});
@@ -133,17 +142,39 @@ function App() {
 
 					successCount++;
 				} catch (error) {
-					console.error(`Failed to import feed: ${feed.title}`, error);
-					failCount++;
+					const errorMessage =
+						error instanceof Error ? error.message : "Unknown error";
+					failedFeeds.push({
+						title: feed.title,
+						url: feed.feedUrl,
+						error: errorMessage,
+					});
 				}
 			}
 
-			toast.success(
-				`Import complete! Success: ${successCount}, Failed: ${failCount}`,
-				{ id: importToast },
-			);
+			// Show summary toast
+			if (failedFeeds.length === 0) {
+				toast.success(`Successfully imported all ${successCount} feeds!`, {
+					id: importToast,
+				});
+			} else {
+				toast.warning(
+					`Import complete! Success: ${successCount}, Failed: ${failedFeeds.length}`,
+					{
+						id: importToast,
+						duration: 5000,
+					},
+				);
+
+				// Show a follow-up toast with details
+				toast.error(
+					`${failedFeeds.length} feed${failedFeeds.length > 1 ? "s" : ""} failed to import.`,
+					{
+						duration: 8000,
+					},
+				);
+			}
 		} catch (error) {
-			console.error("Failed to import OPML:", error);
 			toast.error("Failed to import OPML. Please check the file format.", {
 				id: importToast,
 			});
@@ -198,10 +229,13 @@ function App() {
 
 			const { feedData, posts, isAtom } = parseFeedXml(xmlData);
 
+			// Sanitize feed data to meet schema constraints
+			const sanitizedFeed = sanitizeFeedData(feedData);
+
 			const result = evolu.insert("rssFeed", {
 				feedUrl: feedUrl,
-				title: feedData.title,
-				description: feedData.description || feedData.subtitle || "",
+				title: sanitizedFeed.title,
+				description: sanitizedFeed.description || null,
 				category: "Uncategorized",
 				dateUpdated: new Date().toISOString(),
 			});
@@ -211,11 +245,14 @@ function App() {
 			}
 
 			for (const post of posts) {
+				// Sanitize post data to meet schema constraints
+				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
+
 				evolu.insert("rssPost", {
-					title: post.title,
-					author: extractPostAuthor(post, isAtom, feedData.title),
+					title: sanitizedPost.title,
+					author: sanitizedPost.author || null,
 					publishedDate: extractPostDate(post),
-					link: extractPostLink(post, isAtom),
+					link: sanitizedPost.link,
 					feedId: result.value.id,
 					content: extractPostContent(post),
 				});
@@ -228,7 +265,6 @@ function App() {
 			setUrlInput("");
 			setErrorMessage("");
 		} catch (error) {
-			console.error("Error adding feed:", error);
 			setErrorMessage(
 				error instanceof Error
 					? error.message

@@ -22,6 +22,8 @@ import {
 	extractPostAuthor,
 	extractPostContent,
 	extractPostDate,
+	sanitizeFeedData,
+	sanitizePostData,
 } from "@/lib/feed-operations";
 
 interface AddFeedDialogProps {
@@ -71,10 +73,13 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 
 			const { feedData, posts, isAtom } = parseFeedXml(xmlData);
 
+			// Sanitize feed data to meet schema constraints
+			const sanitizedFeed = sanitizeFeedData(feedData);
+
 			const result = evolu.insert("rssFeed", {
 				feedUrl: feedUrl,
-				title: feedData.title,
-				description: feedData.description || feedData.subtitle || "",
+				title: sanitizedFeed.title,
+				description: sanitizedFeed.description || null,
 				category: categoryInput || "Uncategorized",
 				dateUpdated: new Date().toISOString(),
 			});
@@ -85,11 +90,14 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 
 			// Process posts/entries
 			for (const post of posts) {
+				// Sanitize post data to meet schema constraints
+				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
+
 				evolu.insert("rssPost", {
-					title: post.title,
-					author: extractPostAuthor(post, isAtom, feedData.title),
+					title: sanitizedPost.title,
+					author: sanitizedPost.author || null,
 					publishedDate: extractPostDate(post),
-					link: extractPostLink(post, isAtom),
+					link: sanitizedPost.link,
 					feedId: result.value.id,
 					content: extractPostContent(post),
 				});
@@ -104,7 +112,6 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 			setStatusMessage("");
 			onOpenChange(false);
 		} catch (error) {
-			console.error("Error adding feed:", error);
 			setStatusMessage(
 				error instanceof Error
 					? error.message
