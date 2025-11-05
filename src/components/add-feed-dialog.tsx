@@ -18,8 +18,6 @@ import {
 	parseFeedXml,
 	discoverFeed,
 	looksLikeFeedUrl,
-	extractPostLink,
-	extractPostAuthor,
 	extractPostContent,
 	extractPostDate,
 	sanitizeFeedData,
