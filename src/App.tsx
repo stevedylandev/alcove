@@ -23,9 +23,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, FileUp } from "lucide-react";
+import { Upload, FileUp, Info } from "lucide-react";
 import { Mnemonic } from "@evolu/common";
 import { LoadingScreen } from "@/components/loading-screen";
+import { AboutDialog } from "@/components/about-dialog";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
@@ -250,9 +251,16 @@ function App() {
 				<div className="flex flex-col items-start justify-center gap-6 max-w-md w-full px-4">
 					<div className="flex flex-col gap-2">
 						<h1 className="text-4xl font-bold">Alcove</h1>
-						<h4 className="sm:text-sm text-xs">
-							A privacy focused RSS reader for the open web
-						</h4>
+						<div className="flex items-center gap-2">
+							<h4 className="sm:text-sm text-xs">
+								A privacy focused RSS reader for the open web
+							</h4>
+							<AboutDialog>
+								<Button variant="ghost" size="icon" className="h-5 w-5">
+									<Info className="sm:h-4 sm:w-4 h-2 w-2" />
+								</Button>
+							</AboutDialog>
+						</div>
 					</div>
 					<div className="flex flex-col gap-3 w-full">
 						<div className="flex flex-row gap-3 w-full">
