@@ -17,3 +17,6 @@ Endless rambling of things to fix and improve
 - [x] Add About to settings menu?
 - [x] Add Home screen with start button + acknowledgements
 - [x] Import + Export OPML in settings
+- [ ] Automatically select first feed on load
+- [ ] Add initial app suspense
+- [ ] Fix long blog names on mobile in nav sidebar
