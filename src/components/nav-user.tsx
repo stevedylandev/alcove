@@ -373,7 +373,12 @@ export function NavUser() {
 						</p>
 						<p className="text-sm text-muted-foreground">
 							Alcove is{" "}
-							<a className="underline" href="" target="_blank" rel="noreferrer">
+							<a
+								className="underline"
+								href="https://github.com/stevedylandev/alcove"
+								target="_blank"
+								rel="noreferrer"
+							>
 								MIT open sourced
 							</a>{" "}
 							and run by{" "}
