@@ -11,14 +11,9 @@ import {
 interface FeedActionsProps {
 	onAddFeed: () => void;
 	onRefresh: () => void;
-	onReset: () => void;
 }
 
-export function FeedActions({
-	onAddFeed,
-	onRefresh,
-	onReset,
-}: FeedActionsProps) {
+export function FeedActions({ onAddFeed, onRefresh }: FeedActionsProps) {
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>Actions</SidebarGroupLabel>
@@ -28,12 +23,6 @@ export function FeedActions({
 						<SidebarMenuButton onClick={onAddFeed}>
 							<Plus className="size-4" />
 							<span>Add Feed</span>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-					<SidebarMenuItem>
-						<SidebarMenuButton onClick={onReset}>
-							<RotateCw className="size-4" />
-							<span>Reset</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>

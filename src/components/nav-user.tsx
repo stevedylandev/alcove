@@ -1,17 +1,4 @@
-import {
-	BadgeCheck,
-	Bell,
-	BookKey,
-	Copy,
-	CreditCard,
-	Eye,
-	EyeOff,
-	Info,
-	LogOut,
-	Sparkles,
-	Trash2,
-	Upload,
-} from "lucide-react";
+import { BookKey, Copy, Eye, EyeOff, Info, Trash2, Upload } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -29,7 +16,6 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";

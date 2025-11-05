@@ -1,6 +1,4 @@
-"use client";
-
-import { ChevronRight, Rss } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import {
 	Collapsible,

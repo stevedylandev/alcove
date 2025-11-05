@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { NavUser } from "@/components/nav-user";
 import { NavFeeds } from "@/components/nav-feeds";
@@ -24,7 +22,6 @@ import {
 	allReadStatusesQuery,
 	allReadStatusesWithUnreadQuery,
 	useEvolu,
-	reset,
 	evolu as evoluInstance,
 } from "@/lib/evolu";
 import * as Evolu from "@evolu/common";
@@ -37,15 +34,6 @@ import {
 	extractPostContent,
 	extractPostDate,
 } from "@/lib/feed-operations";
-
-// This is sample data
-const data = {
-	user: {
-		name: "shadcn",
-		email: "m@example.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
-};
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 	selectedFeedId?: string | null;
@@ -419,7 +407,6 @@ export function AppSidebar({
 							<FeedActions
 								onAddFeed={() => setDialogOpen(true)}
 								onRefresh={refreshFeeds}
-								onReset={reset}
 							/>
 							<NavFeeds
 								feeds={allFeeds}
@@ -430,9 +417,7 @@ export function AppSidebar({
 					)}
 				</SidebarContent>
 				<SidebarFooter>
-					{!isMobile || mobileView === "feeds" ? (
-						<NavUser user={data.user} />
-					) : null}
+					{!isMobile || mobileView === "feeds" ? <NavUser /> : null}
 				</SidebarFooter>
 			</Sidebar>
 
