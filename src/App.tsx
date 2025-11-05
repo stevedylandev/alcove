@@ -15,6 +15,7 @@ import {
 	extractPostContent,
 	extractPostDate,
 } from "@/lib/feed-operations";
+import { parseOPML } from "@/lib/opml";
 import {
 	Dialog,
 	DialogContent,
@@ -22,7 +23,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload } from "lucide-react";
+import { Upload, FileUp } from "lucide-react";
 import { Mnemonic } from "@evolu/common";
 
 function App() {
@@ -33,6 +34,8 @@ function App() {
 	const [errorMessage, setErrorMessage] = React.useState("");
 	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = React.useState(false);
 	const [restoreMnemonic, setRestoreMnemonic] = React.useState("");
+	const [isImportingOPML, setIsImportingOPML] = React.useState(false);
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	const evolu = useEvolu();
 
@@ -49,6 +52,90 @@ function App() {
 			setIsRestoreDialogOpen(false);
 			setRestoreMnemonic("");
 			toast.success("Account restored successfully");
+		}
+	}
+
+	async function handleImportOPML(file: File) {
+		setIsImportingOPML(true);
+		const importToast = toast.loading("Reading OPML file...");
+
+		try {
+			const fileContent = await file.text();
+			const opmlFeeds = parseOPML(fileContent);
+
+			toast.loading(`Found ${opmlFeeds.length} feeds. Importing...`, {
+				id: importToast,
+			});
+
+			let successCount = 0;
+			let failCount = 0;
+
+			for (let i = 0; i < opmlFeeds.length; i++) {
+				const feed = opmlFeeds[i];
+				toast.loading(
+					`Importing feed ${i + 1}/${opmlFeeds.length}: ${feed.title}`,
+					{ id: importToast },
+				);
+
+				try {
+					const xmlData = await fetchFeedWithFallback(feed.feedUrl);
+					const { feedData, posts, isAtom } = parseFeedXml(xmlData);
+
+					const result = evolu.insert("rssFeed", {
+						feedUrl: feed.feedUrl,
+						title: feed.title,
+						description:
+							feed.description ||
+							feedData.description ||
+							feedData.subtitle ||
+							"",
+						category: feed.category || "Uncategorized",
+						dateUpdated: new Date().toISOString(),
+					});
+
+					for (const post of posts) {
+						evolu.insert("rssPost", {
+							title: post.title,
+							author: extractPostAuthor(post, isAtom, feedData.title),
+							publishedDate: extractPostDate(post),
+							link: extractPostLink(post, isAtom),
+							feedId: result.value.id,
+							content: extractPostContent(post),
+						});
+					}
+
+					successCount++;
+				} catch (error) {
+					console.error(`Failed to import feed: ${feed.title}`, error);
+					failCount++;
+				}
+			}
+
+			toast.success(
+				`Import complete! Success: ${successCount}, Failed: ${failCount}`,
+				{ id: importToast },
+			);
+		} catch (error) {
+			console.error("Failed to import OPML:", error);
+			toast.error("Failed to import OPML. Please check the file format.", {
+				id: importToast,
+			});
+		} finally {
+			setIsImportingOPML(false);
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
+		}
+	}
+
+	function handleImportClick() {
+		fileInputRef.current?.click();
+	}
+
+	function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+		const file = event.target.files?.[0];
+		if (file) {
+			handleImportOPML(file);
 		}
 	}
 
@@ -159,6 +246,22 @@ function App() {
 								{errorMessage}
 							</div>
 						)}
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".opml,.xml"
+							onChange={handleFileSelect}
+							className="hidden"
+						/>
+						<Button
+							variant="outline"
+							onClick={handleImportClick}
+							disabled={isImportingOPML}
+							className="w-full"
+						>
+							<FileUp className="h-4 w-4 mr-2" />
+							{isImportingOPML ? "Importing OPML..." : "Import OPML"}
+						</Button>
 						<Button
 							variant="outline"
 							onClick={() => setIsRestoreDialogOpen(true)}
