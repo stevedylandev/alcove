@@ -29,7 +29,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
-	const hasFeeds = allFeeds.rows?.length > 0;
+	const hasFeeds = allFeeds.length > 0;
 	const [isInitialLoading, setIsInitialLoading] = React.useState(true);
 	const [urlInput, setUrlInput] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
@@ -43,15 +43,12 @@ function App() {
 
 	// Handle initial loading state
 	React.useEffect(() => {
-		// Wait for the query to be loaded (not pending)
-		if (!allFeeds.isLoading) {
-			// Add a small delay to prevent flash
-			const timer = setTimeout(() => {
-				setIsInitialLoading(false);
-			}, 300);
-			return () => clearTimeout(timer);
-		}
-	}, [allFeeds.isLoading]);
+		// Add a small delay to prevent flash, then stop loading
+		const timer = setTimeout(() => {
+			setIsInitialLoading(false);
+		}, 500);
+		return () => clearTimeout(timer);
+	}, []);
 
 	function handleRestoreDialogOpenChange(open: boolean) {
 		setIsRestoreDialogOpen(open);
