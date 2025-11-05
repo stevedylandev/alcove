@@ -134,11 +134,18 @@ export function PostsList({
 									<span className="font-medium line-clamp-2 leading-snug">
 										{post.title}
 									</span>
-									{post.author && (
-										<span className="text-muted-foreground text-xs">
-											{post.author}
-										</span>
-									)}
+									<div className="flex items-center justify-between">
+										{post.author && (
+											<span className="text-muted-foreground truncate text-xs">
+												{post.author}
+											</span>
+										)}
+										{post.publishedDate && (
+											<span className="text-muted-foreground text-xs">
+												{new Date(post.publishedDate).toLocaleDateString()}
+											</span>
+										)}
+									</div>
 								</div>
 							</button>
 						);
