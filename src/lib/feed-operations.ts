@@ -75,11 +75,19 @@ export async function fetchFeedWithFallback(url: string): Promise<string> {
 		const response = await fetch(url);
 		return await response.text();
 	} catch {
-		// Fall back to CORS proxy if direct fetch fails
-		const response = await fetch(
-			`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-		);
-		return await response.text();
+		// Fall back to primary CORS proxy if direct fetch fails
+		try {
+			const response = await fetch(
+				`https://proxy.alcove.tools?url=${encodeURIComponent(url)}`,
+			);
+			return await response.text();
+		} catch {
+			// Fall back to secondary CORS proxy if primary fails
+			const response = await fetch(
+				`https://proxy2.alcove.tools?url=${encodeURIComponent(url)}`,
+			);
+			return await response.text();
+		}
 	}
 }
 
@@ -152,10 +160,18 @@ export async function discoverFeed(websiteUrl: string): Promise<{
 		const testUrl = `${origin}${path}`;
 
 		try {
-			// Use CORS proxy to avoid CORS issues
-			const response = await fetch(
-				`https://corsproxy.io/?url=${encodeURIComponent(testUrl)}`,
-			);
+			// Try primary CORS proxy
+			let response: Response;
+			try {
+				response = await fetch(
+					`https://proxy.alcove.tools?url=${encodeURIComponent(testUrl)}`,
+				);
+			} catch {
+				// Fall back to secondary CORS proxy
+				response = await fetch(
+					`https://proxy2.alcove.tools?url=${encodeURIComponent(testUrl)}`,
+				);
+			}
 
 			if (response.ok) {
 				const text = await response.text();
@@ -213,9 +229,17 @@ export async function extractYouTubeChannelId(
 
 			// Fetch the YouTube page to extract the channel ID from meta tags
 			try {
-				const response = await fetch(
-					`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-				);
+				let response: Response;
+				try {
+					response = await fetch(
+						`https://proxy.alcove.tools?url=${encodeURIComponent(url)}`,
+					);
+				} catch {
+					// Fall back to secondary CORS proxy
+					response = await fetch(
+						`https://proxy2.alcove.tools?url=${encodeURIComponent(url)}`,
+					);
+				}
 				const html = await response.text();
 
 				// Look for channel ID in various places
@@ -248,9 +272,17 @@ export async function extractYouTubeChannelId(
 		// For /c/ and /user/ formats, we also need to fetch the page
 		if (url.includes("/c/") || url.includes("/user/")) {
 			try {
-				const response = await fetch(
-					`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-				);
+				let response: Response;
+				try {
+					response = await fetch(
+						`https://proxy.alcove.tools?url=${encodeURIComponent(url)}`,
+					);
+				} catch {
+					// Fall back to secondary CORS proxy
+					response = await fetch(
+						`https://proxy2.alcove.tools?url=${encodeURIComponent(url)}`,
+					);
+				}
 				const html = await response.text();
 
 				const channelIdMatch = html.match(/channelId":"([^"]+)"/);
