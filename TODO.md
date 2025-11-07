@@ -22,8 +22,8 @@ Endless rambling of things to fix and improve
 - [x] Fix long blog names on mobile in nav sidebar
 - [x] YouTube feed support
 - [x] Detect Categories in OPML
-- [ ] CRUD categories
-- [ ] Check broken html characters in post titles
+- [x] CRUD categories
+- [x] Check broken html characters in post titles
 - [x] Update Author name to Blog Name in list of posts
 - [ ] Fix mobile navigation through posts
 - [ ] Add another relay

@@ -48,12 +48,12 @@ function decodeHtmlEntities(text: string): string {
 	}
 
 	// Handle numeric entities like &#8217;
-	decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
+	decoded = decoded.replace(/&#(\d+);/g, (_match, dec) => {
 		return String.fromCharCode(dec);
 	});
 
 	// Handle hex entities like &#x27;
-	decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (match, hex) => {
+	decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (_match, hex) => {
 		return String.fromCharCode(parseInt(hex, 16));
 	});
 
