@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil, Trash2 } from "lucide-react";
 
 import {
 	Collapsible,
@@ -15,6 +15,12 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface Feed {
 	id: string;
@@ -26,12 +32,16 @@ interface NavFeedsProps {
 	feeds: readonly Feed[];
 	selectedFeedId?: string | null;
 	onFeedSelect: (feedId: string | null) => void;
+	onCategoryEdit?: (category: string) => void;
+	onCategoryDelete?: (category: string) => void;
 }
 
 export function NavFeeds({
 	feeds,
 	selectedFeedId,
 	onFeedSelect,
+	onCategoryEdit,
+	onCategoryDelete,
 }: NavFeedsProps) {
 	// Group feeds by category
 	const feedsByCategory = feeds.reduce(
@@ -80,37 +90,67 @@ export function NavFeeds({
 				</SidebarMenuItem>
 
 				{/* Categories with feeds */}
-				{categories.map((category) => (
-					<Collapsible
-						key={category}
-						asChild
-						defaultOpen={true}
-						className="group/collapsible"
-					>
-						<SidebarMenuItem>
-							<CollapsibleTrigger asChild>
-								<SidebarMenuButton tooltip={category}>
-									<span className="font-medium">{category}</span>
-									<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-								</SidebarMenuButton>
-							</CollapsibleTrigger>
-							<CollapsibleContent>
-								<SidebarMenuSub>
-									{feedsByCategory[category].map((feed) => (
-										<SidebarMenuSubItem key={feed.id}>
-											<SidebarMenuSubButton
-												onClick={() => onFeedSelect(feed.id)}
-												isActive={selectedFeedId === feed.id}
+				{categories.map((category) => {
+					const isUncategorized = category === "Uncategorized";
+					const categoryTrigger = (
+						<CollapsibleTrigger asChild>
+							<SidebarMenuButton tooltip={category}>
+								<span className="font-medium">{category}</span>
+								<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+							</SidebarMenuButton>
+						</CollapsibleTrigger>
+					);
+
+					return (
+						<Collapsible
+							key={category}
+							asChild
+							defaultOpen={true}
+							className="group/collapsible"
+						>
+							<SidebarMenuItem>
+								{isUncategorized ? (
+									categoryTrigger
+								) : (
+									<ContextMenu>
+										<ContextMenuTrigger asChild>
+											{categoryTrigger}
+										</ContextMenuTrigger>
+										<ContextMenuContent>
+											<ContextMenuItem
+												onClick={() => onCategoryEdit?.(category)}
 											>
-												<span>{feed.title || "Untitled"}</span>
-											</SidebarMenuSubButton>
-										</SidebarMenuSubItem>
-									))}
-								</SidebarMenuSub>
-							</CollapsibleContent>
-						</SidebarMenuItem>
-					</Collapsible>
-				))}
+												<Pencil className="h-4 w-4 mr-2" />
+												Rename Category
+											</ContextMenuItem>
+											<ContextMenuItem
+												variant="destructive"
+												onClick={() => onCategoryDelete?.(category)}
+											>
+												<Trash2 className="h-4 w-4 mr-2" />
+												Delete Category
+											</ContextMenuItem>
+										</ContextMenuContent>
+									</ContextMenu>
+								)}
+								<CollapsibleContent>
+									<SidebarMenuSub>
+										{feedsByCategory[category].map((feed) => (
+											<SidebarMenuSubItem key={feed.id}>
+												<SidebarMenuSubButton
+													onClick={() => onFeedSelect(feed.id)}
+													isActive={selectedFeedId === feed.id}
+												>
+													<span>{feed.title || "Untitled"}</span>
+												</SidebarMenuSubButton>
+											</SidebarMenuSubItem>
+										))}
+									</SidebarMenuSub>
+								</CollapsibleContent>
+							</SidebarMenuItem>
+						</Collapsible>
+					);
+				})}
 			</SidebarMenu>
 		</SidebarGroup>
 	);

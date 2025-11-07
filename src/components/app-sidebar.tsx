@@ -5,6 +5,8 @@ import { FeedActions } from "@/components/feed-actions";
 import { AddFeedDialog } from "@/components/add-feed-dialog";
 import { PostsList } from "@/components/posts-list";
 import { MobilePostsHeader } from "@/components/mobile-posts-header";
+import { CategoryEditDialog } from "@/components/category-edit-dialog";
+import { ChangeCategoryDialog } from "@/components/change-category-dialog";
 import {
 	Sidebar,
 	SidebarContent,
@@ -50,6 +52,11 @@ export function AppSidebar({
 	...props
 }: AppSidebarProps) {
 	const [dialogOpen, setDialogOpen] = React.useState(false);
+	const [categoryEditDialogOpen, setCategoryEditDialogOpen] =
+		React.useState(false);
+	const [changeCategoryDialogOpen, setChangeCategoryDialogOpen] =
+		React.useState(false);
+	const [categoryToEdit, setCategoryToEdit] = React.useState("");
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [mobileView, setMobileView] = React.useState<"feeds" | "posts">(
 		"feeds",
@@ -285,6 +292,89 @@ export function AppSidebar({
 		onFeedSelect(null);
 	}, [selectedFeedId, allFeeds, onFeedSelect]);
 
+	// Handle category edit from context menu
+	const handleCategoryEdit = React.useCallback((category: string) => {
+		setCategoryToEdit(category);
+		setCategoryEditDialogOpen(true);
+	}, []);
+
+	// Handle category delete from context menu
+	const handleCategoryDelete = React.useCallback(
+		(category: string) => {
+			// Find all feeds in this category
+			const feedsInCategory = allFeeds.filter((f) => f.category === category);
+
+			// Set category to null for all feeds in this category
+			feedsInCategory.forEach((feed) => {
+				evoluInstance.update("rssFeed", {
+					id: feed.id as any,
+					category: null,
+				});
+			});
+
+			toast.success(
+				`Removed category "${category}" from ${feedsInCategory.length} feed${feedsInCategory.length !== 1 ? "s" : ""}`,
+			);
+
+			// Navigate back to all feeds
+			onFeedSelect(null);
+		},
+		[allFeeds, onFeedSelect],
+	);
+
+	// Handle category rename
+	const handleCategoryRename = React.useCallback(
+		(newName: string) => {
+			if (!categoryToEdit) return;
+
+			// Find all feeds in the old category
+			const feedsInCategory = allFeeds.filter(
+				(f) => f.category === categoryToEdit,
+			);
+
+			// Update category for all feeds
+			feedsInCategory.forEach((feed) => {
+				evoluInstance.update("rssFeed", {
+					id: feed.id as any,
+					category: newName as any,
+				});
+			});
+
+			toast.success(
+				`Renamed category "${categoryToEdit}" to "${newName}" for ${feedsInCategory.length} feed${feedsInCategory.length !== 1 ? "s" : ""}`,
+			);
+		},
+		[categoryToEdit, allFeeds],
+	);
+
+	// Handle change category for a specific feed
+	const handleChangeCategory = React.useCallback(() => {
+		const selectedFeed = allFeeds.find((f) => f.id === selectedFeedId);
+		if (!selectedFeed) return;
+
+		setCategoryToEdit(selectedFeed.category || "");
+		setChangeCategoryDialogOpen(true);
+	}, [selectedFeedId, allFeeds]);
+
+	// Handle feed category change
+	const handleFeedCategoryChange = React.useCallback(
+		(newCategory: string | null) => {
+			if (!selectedFeedId) return;
+
+			const selectedFeed = allFeeds.find((f) => f.id === selectedFeedId);
+			if (!selectedFeed) return;
+
+			evoluInstance.update("rssFeed", {
+				id: selectedFeedId as any,
+				category: newCategory as any,
+			});
+
+			const categoryText = newCategory ? `"${newCategory}"` : "Uncategorized";
+			toast.success(`Moved feed to ${categoryText}`);
+		},
+		[selectedFeedId, allFeeds],
+	);
+
 	const refreshFeeds = React.useCallback(async () => {
 		if (allFeeds.length === 0) {
 			toast.error("No feeds to refresh");
@@ -373,9 +463,33 @@ export function AppSidebar({
 		selectedFeedId === "unread" ? "Unread" : selectedFeed?.title || "All Posts";
 	const selectedFeedCategory = selectedFeed?.category || null;
 
+	// Get list of existing categories for the change category dialog
+	const existingCategories = React.useMemo(() => {
+		const categories = new Set<string>();
+		allFeeds.forEach((feed) => {
+			if (feed.category) {
+				categories.add(feed.category);
+			}
+		});
+		return Array.from(categories).sort();
+	}, [allFeeds]);
+
 	return (
 		<>
 			<AddFeedDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+			<CategoryEditDialog
+				open={categoryEditDialogOpen}
+				onOpenChange={setCategoryEditDialogOpen}
+				currentCategory={categoryToEdit}
+				onRename={handleCategoryRename}
+			/>
+			<ChangeCategoryDialog
+				open={changeCategoryDialogOpen}
+				onOpenChange={setChangeCategoryDialogOpen}
+				currentCategory={categoryToEdit}
+				existingCategories={existingCategories}
+				onChangeCategory={handleFeedCategoryChange}
+			/>
 
 			<Sidebar collapsible="offcanvas" {...props}>
 				<SidebarHeader>
@@ -412,6 +526,7 @@ export function AppSidebar({
 								onMarkAllAsUnread={handleMarkAllAsUnread}
 								onDeleteFeed={handleDeleteFeed}
 								onDeleteCategory={handleDeleteCategory}
+								onChangeCategory={handleChangeCategory}
 								selectedFeedId={selectedFeedId}
 								selectedFeedCategory={selectedFeedCategory}
 								className="border-0"
@@ -428,6 +543,8 @@ export function AppSidebar({
 								feeds={allFeeds}
 								selectedFeedId={selectedFeedId}
 								onFeedSelect={handleFeedSelect}
+								onCategoryEdit={handleCategoryEdit}
+								onCategoryDelete={handleCategoryDelete}
 							/>
 						</>
 					)}
@@ -450,6 +567,7 @@ export function AppSidebar({
 				onMarkAllAsUnread={handleMarkAllAsUnread}
 				onDeleteFeed={handleDeleteFeed}
 				onDeleteCategory={handleDeleteCategory}
+				onChangeCategory={handleChangeCategory}
 				selectedFeedId={selectedFeedId}
 				selectedFeedCategory={selectedFeedCategory}
 				className={`bg-sidebar text-sidebar-foreground hidden md:flex ${hidden ? "w-0 min-w-0 border-0 overflow-hidden" : "w-[320px] overflow-y-auto"}`}

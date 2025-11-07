@@ -1,4 +1,11 @@
-import { MoreVertical, Check, X, Trash2, FolderX } from "lucide-react";
+import {
+	MoreVertical,
+	Check,
+	X,
+	Trash2,
+	FolderX,
+	FolderEdit,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -31,6 +38,7 @@ interface PostsListProps {
 	onMarkAllAsUnread: () => void;
 	onDeleteFeed?: () => void;
 	onDeleteCategory?: () => void;
+	onChangeCategory?: () => void;
 	selectedFeedId?: string | null;
 	selectedFeedCategory?: string | null;
 	className?: string;
@@ -48,6 +56,7 @@ export function PostsList({
 	onMarkAllAsUnread,
 	onDeleteFeed,
 	onDeleteCategory,
+	onChangeCategory,
 	selectedFeedId,
 	selectedFeedCategory,
 	className = "",
@@ -78,15 +87,25 @@ export function PostsList({
 									<X className="h-4 w-4 mr-2" />
 									Mark all as unread
 								</DropdownMenuItem>
-								{selectedFeedId && onDeleteFeed && (
-									<DropdownMenuItem
-										onClick={onDeleteFeed}
-										className="text-destructive focus:text-destructive"
-									>
-										<Trash2 className="h-4 w-4 mr-2" />
-										Delete feed
-									</DropdownMenuItem>
-								)}
+								{selectedFeedId &&
+									selectedFeedId !== "unread" &&
+									onChangeCategory && (
+										<DropdownMenuItem onClick={onChangeCategory}>
+											<FolderEdit className="h-4 w-4 mr-2" />
+											Change category
+										</DropdownMenuItem>
+									)}
+								{selectedFeedId &&
+									selectedFeedId !== "unread" &&
+									onDeleteFeed && (
+										<DropdownMenuItem
+											onClick={onDeleteFeed}
+											className="text-destructive focus:text-destructive"
+										>
+											<Trash2 className="h-4 w-4 mr-2" />
+											Delete feed
+										</DropdownMenuItem>
+									)}
 								{selectedFeedCategory && onDeleteCategory && (
 									<DropdownMenuItem
 										onClick={onDeleteCategory}

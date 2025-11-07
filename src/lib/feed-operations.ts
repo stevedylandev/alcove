@@ -150,8 +150,6 @@ export async function extractYouTubeChannelId(
 	url: string,
 ): Promise<string | null> {
 	try {
-		const urlObj = new URL(url);
-
 		// Direct channel ID format
 		if (url.includes("/channel/")) {
 			const match = url.match(/\/channel\/([^/?]+)/);
