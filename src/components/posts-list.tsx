@@ -136,9 +136,9 @@ export function PostsList({
 										{post.title}
 									</span>
 									<div className="flex items-center justify-between">
-										{post.feedTitle && (
+										{(post.feedTitle || post.author) && (
 											<span className="text-muted-foreground truncate text-xs">
-												{post.feedTitle}
+												{post.feedTitle || post.author}
 											</span>
 										)}
 										{post.publishedDate && (
