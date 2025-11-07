@@ -26,4 +26,6 @@ Endless rambling of things to fix and improve
 - [x] Check broken html characters in post titles
 - [x] Update Author name to Blog Name in list of posts
 - [x] Fix mobile navigation through posts
-- [ ] Add another relay
+- [x] Add another relay
+- [x] Updated README.md
+- [ ] Write blog post
