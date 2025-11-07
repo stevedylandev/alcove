@@ -21,9 +21,9 @@ Endless rambling of things to fix and improve
 - [x] Add initial app suspense
 - [x] Fix long blog names on mobile in nav sidebar
 - [ ] YouTube feed support
-- [ ] Detect Categories in OPML
+- [x] Detect Categories in OPML
 - [ ] CRUD categories
 - [ ] Check broken html characters in post titles
-- [ ] Update Author name to Blog Name in list of posts
+- [x] Update Author name to Blog Name in list of posts
 - [ ] Fix mobile navigation through posts
 - [ ] Add another relay

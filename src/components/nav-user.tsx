@@ -132,6 +132,7 @@ export function NavUser() {
 						evolu.insert("rssPost", {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
+							feedTitle: feed.title,
 							publishedDate: extractPostDate(post),
 							link: extractPostLink(post, isAtom),
 							feedId: result.value.id,

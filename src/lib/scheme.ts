@@ -38,6 +38,7 @@ export const Schema = {
 		link: NonEmptyString1000,
 		content: nullOr(NonEmptyString),
 		author: nullOr(NonEmptyString200),
+		feedTitle: nullOr(NonEmptyString200),
 		publishedDate: nullOr(NonEmptyString),
 	},
 	readStatus: {

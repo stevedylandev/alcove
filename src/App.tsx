@@ -131,6 +131,7 @@ function App() {
 						evolu.insert("rssPost", {
 							title: sanitizedPost.title,
 							author: sanitizedPost.author || null,
+							feedTitle: sanitizedFeed.title,
 							publishedDate: extractPostDate(post),
 							link: sanitizedPost.link,
 							feedId: result.value.id,
@@ -249,6 +250,7 @@ function App() {
 				evolu.insert("rssPost", {
 					title: sanitizedPost.title,
 					author: sanitizedPost.author || null,
+					feedTitle: sanitizedFeed.title,
 					publishedDate: extractPostDate(post),
 					link: sanitizedPost.link,
 					feedId: result.value.id,

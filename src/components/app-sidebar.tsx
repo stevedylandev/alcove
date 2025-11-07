@@ -321,6 +321,7 @@ export function AppSidebar({
 						evolu.insert("rssPost", {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
+							feedTitle: feed.title,
 							publishedDate: extractPostDate(post),
 							link: postLink,
 							feedId: feed.id,

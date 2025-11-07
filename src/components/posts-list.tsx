@@ -12,6 +12,7 @@ interface Post {
 	id: string;
 	title: string | null;
 	author: string | null;
+	feedTitle: string | null;
 	publishedDate: string | null;
 	link: string | null;
 	feedId: string | null;
@@ -135,9 +136,9 @@ export function PostsList({
 										{post.title}
 									</span>
 									<div className="flex items-center justify-between">
-										{post.author && (
+										{post.feedTitle && (
 											<span className="text-muted-foreground truncate text-xs">
-												{post.author}
+												{post.feedTitle}
 											</span>
 										)}
 										{post.publishedDate && (
