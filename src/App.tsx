@@ -14,6 +14,8 @@ import {
 	extractPostDate,
 	sanitizeFeedData,
 	sanitizePostData,
+	isYouTubeUrl,
+	convertYouTubeUrlToFeed,
 } from "@/lib/feed-operations";
 import { parseOPML } from "@/lib/opml";
 import {
@@ -209,7 +211,23 @@ function App() {
 			let feedUrl = urlInput;
 			let xmlData: string | null = null;
 
-			if (!looksLikeFeedUrl(urlInput)) {
+			// Check if it's a YouTube URL and convert it
+			if (isYouTubeUrl(urlInput)) {
+				setErrorMessage("Detecting YouTube channel...");
+				const youtubeFeedUrl = await convertYouTubeUrlToFeed(urlInput);
+
+				if (!youtubeFeedUrl) {
+					setErrorMessage(
+						"Could not extract YouTube channel ID. Please try a direct channel URL.",
+					);
+					setIsAddingFeed(false);
+					return;
+				}
+
+				feedUrl = youtubeFeedUrl;
+				xmlData = await fetchFeedWithFallback(feedUrl);
+			} else if (!looksLikeFeedUrl(urlInput)) {
+				setErrorMessage("Discovering RSS feed...");
 				const discovered = await discoverFeed(urlInput);
 
 				if (!discovered) {
