@@ -15,7 +15,7 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Circle, CircleCheckBig } from "lucide-react";
+import { Circle, CircleCheckBig, ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery } from "@evolu/react";
 import {
 	allFeedsQuery,
@@ -74,6 +74,38 @@ function Dashboard() {
 		if (!selectedPost?.feedId) return null;
 		return allFeeds.find((f) => f.id === selectedPost.feedId);
 	}, [selectedPost?.feedId, allFeeds]);
+
+	// Get sorted posts for navigation
+	const sortedPosts = React.useMemo(() => {
+		return [...allPosts].sort((a, b) => {
+			if (!a.publishedDate) return 1;
+			if (!b.publishedDate) return -1;
+			return b.publishedDate.localeCompare(a.publishedDate);
+		});
+	}, [allPosts]);
+
+	// Get current post index and navigation info
+	const currentPostIndex = React.useMemo(() => {
+		if (!selectedPostId) return -1;
+		return sortedPosts.findIndex((p) => p.id === selectedPostId);
+	}, [selectedPostId, sortedPosts]);
+
+	const hasPreviousPost = currentPostIndex > 0;
+	const hasNextPost =
+		currentPostIndex >= 0 && currentPostIndex < sortedPosts.length - 1;
+
+	// Navigation handlers
+	const goToPreviousPost = React.useCallback(() => {
+		if (hasPreviousPost) {
+			setSelectedPostId(sortedPosts[currentPostIndex - 1].id);
+		}
+	}, [hasPreviousPost, sortedPosts, currentPostIndex]);
+
+	const goToNextPost = React.useCallback(() => {
+		if (hasNextPost) {
+			setSelectedPostId(sortedPosts[currentPostIndex + 1].id);
+		}
+	}, [hasNextPost, sortedPosts, currentPostIndex]);
 
 	// Check if current post is read
 	const isCurrentPostRead = React.useMemo(() => {
@@ -192,6 +224,30 @@ function Dashboard() {
 								)}
 							</BreadcrumbList>
 						</Breadcrumb>
+						{selectedPost && (
+							<div className="ml-auto flex items-center gap-1">
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={goToPreviousPost}
+									disabled={!hasPreviousPost}
+									className="h-8 w-8"
+									title="Previous post"
+								>
+									<ChevronUp className="h-4 w-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={goToNextPost}
+									disabled={!hasNextPost}
+									className="h-8 w-8"
+									title="Next post"
+								>
+									<ChevronDown className="h-4 w-4" />
+								</Button>
+							</div>
+						)}
 					</header>
 					<div
 						ref={mainContentRef}
