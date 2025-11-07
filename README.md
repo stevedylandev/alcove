@@ -1,6 +1,6 @@
 # Alcove
 
-![cover](https://dev.alcove.tools/og.png)
+![cover](https://beta.alcove.tools/og.png)
 
 A privacy focused RSS reader for the open web
 
