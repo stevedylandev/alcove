@@ -10,6 +10,56 @@ const parser = new XMLParser({
 	trimValues: true,
 });
 
+/**
+ * Decodes HTML entities in a string
+ * Handles both named entities (&amp;) and numeric entities (&#038;, &#x26;)
+ */
+function decodeHtmlEntities(text: string): string {
+	if (!text || typeof text !== "string") return text;
+
+	// Create a temporary element to use browser's built-in HTML decoding
+	if (typeof document !== "undefined") {
+		const textarea = document.createElement("textarea");
+		textarea.innerHTML = text;
+		return textarea.value;
+	}
+
+	// Fallback for non-browser environments (though we're in a browser app)
+	// Handle common HTML entities manually
+	const entities: Record<string, string> = {
+		"&amp;": "&",
+		"&lt;": "<",
+		"&gt;": ">",
+		"&quot;": '"',
+		"&#039;": "'",
+		"&apos;": "'",
+		"&#8217;": "'",
+		"&#8216;": "'",
+		"&#8220;": '"',
+		"&#8221;": '"',
+		"&#8211;": "–",
+		"&#8212;": "—",
+		"&#038;": "&",
+	};
+
+	let decoded = text;
+	for (const [entity, char] of Object.entries(entities)) {
+		decoded = decoded.replace(new RegExp(entity, "g"), char);
+	}
+
+	// Handle numeric entities like &#8217;
+	decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
+		return String.fromCharCode(dec);
+	});
+
+	// Handle hex entities like &#x27;
+	decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (match, hex) => {
+		return String.fromCharCode(parseInt(hex, 16));
+	});
+
+	return decoded;
+}
+
 export interface ParsedFeedData {
 	feedData: any;
 	posts: any[];
@@ -386,24 +436,30 @@ export function extractPostDate(post: any): string {
 }
 
 /**
- * Extract string value from various data types
+ * Extract string value from various data types and decode HTML entities
  */
 function extractStringValue(value: any): string {
 	if (!value) return "";
-	if (typeof value === "string") return value;
 
-	// Handle objects that might contain text
-	if (typeof value === "object") {
+	let strValue = "";
+
+	if (typeof value === "string") {
+		strValue = value;
+	} else if (typeof value === "object") {
+		// Handle objects that might contain text
 		// Try common text properties
-		if (value.__cdata) return String(value.__cdata);
-		if (value["#text"]) return String(value["#text"]);
-		if (value.text) return String(value.text);
-		// Last resort: try to convert to string
-		return "";
+		if (value.__cdata) strValue = String(value.__cdata);
+		else if (value["#text"]) strValue = String(value["#text"]);
+		else if (value.text) strValue = String(value.text);
+		// Last resort: return empty string
+		else return "";
+	} else {
+		// For numbers, booleans, etc.
+		strValue = String(value);
 	}
 
-	// For numbers, booleans, etc.
-	return String(value);
+	// Decode HTML entities before returning
+	return decodeHtmlEntities(strValue);
 }
 
 /**
