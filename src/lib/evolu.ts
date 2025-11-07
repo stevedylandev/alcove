@@ -11,10 +11,10 @@ export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
 			type: "WebSocket",
 			url: "wss://relay.alcove.tools",
 		},
-		// {
-		// 	type: "WebSocket",
-		// 	url: "ws://localhost:4000",
-		// },
+		{
+			type: "WebSocket",
+			url: "wss://relay2.alcove.tools",
+		},
 	],
 });
 
