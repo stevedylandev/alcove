@@ -22,6 +22,8 @@ import {
 	extractPostDate,
 	sanitizeFeedData,
 	sanitizePostData,
+	isYouTubeUrl,
+	convertYouTubeUrlToFeed,
 } from "@/lib/feed-operations";
 
 interface AddFeedDialogProps {
@@ -51,7 +53,23 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 			let feedUrl = urlInput;
 			let xmlData: string | null = null;
 
-			if (!looksLikeFeedUrl(urlInput)) {
+			// Check if it's a YouTube URL and convert it
+			if (isYouTubeUrl(urlInput)) {
+				setStatusMessage("Detecting YouTube channel...");
+				const youtubeFeedUrl = await convertYouTubeUrlToFeed(urlInput);
+
+				if (!youtubeFeedUrl) {
+					setStatusMessage(
+						"Could not extract YouTube channel ID. Please try a direct channel URL.",
+					);
+					setIsAddingFeed(false);
+					return;
+				}
+
+				feedUrl = youtubeFeedUrl;
+				xmlData = await fetchFeedWithFallback(feedUrl);
+			} else if (!looksLikeFeedUrl(urlInput)) {
+				setStatusMessage("Discovering RSS feed...");
 				const discovered = await discoverFeed(urlInput);
 
 				if (!discovered) {
@@ -98,7 +116,7 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 					publishedDate: extractPostDate(post),
 					link: sanitizedPost.link,
 					feedId: result.value.id,
-					content: extractPostContent(post),
+					content: extractPostContent(post, sanitizedPost.link),
 				});
 			}
 

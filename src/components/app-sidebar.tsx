@@ -325,7 +325,7 @@ export function AppSidebar({
 							publishedDate: extractPostDate(post),
 							link: postLink,
 							feedId: feed.id,
-							content: extractPostContent(post),
+							content: extractPostContent(post, postLink),
 						});
 						newPostsCount++;
 					}

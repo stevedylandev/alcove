@@ -129,14 +129,15 @@ export function NavUser() {
 					}
 
 					for (const post of posts) {
+						const postLink = extractPostLink(post, isAtom);
 						evolu.insert("rssPost", {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
 							feedTitle: feed.title,
 							publishedDate: extractPostDate(post),
-							link: extractPostLink(post, isAtom),
+							link: postLink,
 							feedId: result.value.id,
-							content: extractPostContent(post),
+							content: extractPostContent(post, postLink),
 						});
 					}
 

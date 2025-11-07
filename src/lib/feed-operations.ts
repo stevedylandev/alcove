@@ -139,6 +139,144 @@ export function looksLikeFeedUrl(url: string): boolean {
 }
 
 /**
+ * Extracts YouTube channel ID from various YouTube URL formats
+ * Supports:
+ * - https://www.youtube.com/@ChannelHandle
+ * - https://www.youtube.com/channel/UC...
+ * - https://www.youtube.com/c/ChannelName
+ * - https://www.youtube.com/user/Username
+ */
+export async function extractYouTubeChannelId(
+	url: string,
+): Promise<string | null> {
+	try {
+		const urlObj = new URL(url);
+
+		// Direct channel ID format
+		if (url.includes("/channel/")) {
+			const match = url.match(/\/channel\/([^/?]+)/);
+			return match ? match[1] : null;
+		}
+
+		// Handle @ format - need to fetch the page to get channel ID
+		if (url.includes("/@")) {
+			const handle = url.match(/\/@([^/?]+)/)?.[1];
+			if (!handle) return null;
+
+			// Fetch the YouTube page to extract the channel ID from meta tags
+			try {
+				const response = await fetch(
+					`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+				);
+				const html = await response.text();
+
+				// Look for channel ID in various places
+				const channelIdMatch = html.match(/channelId":"([^"]+)"/);
+				if (channelIdMatch) {
+					return channelIdMatch[1];
+				}
+
+				// Alternative: look in meta tags
+				const metaMatch = html.match(
+					/<meta itemprop="channelId" content="([^"]+)">/,
+				);
+				if (metaMatch) {
+					return metaMatch[1];
+				}
+
+				// Alternative: look in link tags
+				const linkMatch = html.match(
+					/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/([^"]+)">/,
+				);
+				if (linkMatch) {
+					return linkMatch[1];
+				}
+			} catch (error) {
+				console.error("Failed to fetch YouTube page for channel ID:", error);
+				return null;
+			}
+		}
+
+		// For /c/ and /user/ formats, we also need to fetch the page
+		if (url.includes("/c/") || url.includes("/user/")) {
+			try {
+				const response = await fetch(
+					`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+				);
+				const html = await response.text();
+
+				const channelIdMatch = html.match(/channelId":"([^"]+)"/);
+				if (channelIdMatch) {
+					return channelIdMatch[1];
+				}
+			} catch (error) {
+				console.error("Failed to fetch YouTube page for channel ID:", error);
+				return null;
+			}
+		}
+
+		return null;
+	} catch (error) {
+		console.error("Error extracting YouTube channel ID:", error);
+		return null;
+	}
+}
+
+/**
+ * Converts YouTube channel URL to RSS feed URL
+ */
+export async function convertYouTubeUrlToFeed(
+	url: string,
+): Promise<string | null> {
+	const channelId = await extractYouTubeChannelId(url);
+	if (!channelId) return null;
+
+	return `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+}
+
+/**
+ * Checks if a URL is a YouTube URL
+ */
+export function isYouTubeUrl(url: string): boolean {
+	return url.includes("youtube.com") || url.includes("youtu.be");
+}
+
+/**
+ * Extracts YouTube video ID from a video URL
+ * Supports:
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID
+ */
+export function extractYouTubeVideoId(url: string): string | null {
+	try {
+		// Standard watch URL
+		const watchMatch = url.match(/[?&]v=([^&]+)/);
+		if (watchMatch) return watchMatch[1];
+
+		// Short URL format
+		const shortMatch = url.match(/youtu\.be\/([^?]+)/);
+		if (shortMatch) return shortMatch[1];
+
+		// Embed URL format
+		const embedMatch = url.match(/youtube\.com\/embed\/([^?]+)/);
+		if (embedMatch) return embedMatch[1];
+
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Checks if a post is from a YouTube feed
+ */
+export function isYouTubePost(feedUrl: string | null): boolean {
+	if (!feedUrl) return false;
+	return feedUrl.includes("youtube.com/feeds/videos.xml");
+}
+
+/**
  * Extracts post link from RSS or Atom post entry
  */
 export function extractPostLink(post: any, isAtom: boolean): string {
@@ -204,25 +342,29 @@ export function extractPostAuthor(
 /**
  * Extracts content from RSS or Atom post entry
  */
-export function extractPostContent(post: any): string {
+export function extractPostContent(post: any, postLink?: string): string {
 	// Try various content fields in order of preference
 	const content =
 		post["content:encoded"] || post.content || post.description || post.summary;
 
+	// Default fallback message
+	const fallbackMessage = postLink
+		? `<p><a href="${postLink}" target="_blank" rel="noopener noreferrer">View post</a></p>`
+		: "Please open on the web";
+
 	// Handle different content structures
 	if (typeof content === "string") {
 		const trimmed = content.trim();
-		// If content is too short or empty, return default message
-		return trimmed.length > 0 ? trimmed : "Please open on the web";
+		return trimmed.length > 0 ? trimmed : fallbackMessage;
 	} else if (content && typeof content === "object") {
 		// Handle CDATA or nested text
 		const extracted = content.__cdata || content["#text"] || "";
 		const trimmed = String(extracted).trim();
-		return trimmed.length > 0 ? trimmed : "Please open on the web";
+		return trimmed.length > 0 ? trimmed : fallbackMessage;
 	}
 
 	// No content found - this is fine for link-only feeds
-	return "Please open on the web";
+	return fallbackMessage;
 }
 
 /**

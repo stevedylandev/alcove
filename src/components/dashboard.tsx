@@ -29,6 +29,7 @@ import rehypeSanitize from "rehype-sanitize";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import { extractYouTubeVideoId, isYouTubePost } from "@/lib/feed-operations";
 
 function Dashboard() {
 	const [selectedFeedId, setSelectedFeedId] = React.useState<string | null>(
@@ -67,6 +68,12 @@ function Dashboard() {
 	const selectedPost = selectedPostId
 		? allPosts.find((p) => p.id === selectedPostId)
 		: null;
+
+	// Get the feed for the selected post to check if it's YouTube
+	const selectedPostFeed = React.useMemo(() => {
+		if (!selectedPost?.feedId) return null;
+		return allFeeds.find((f) => f.id === selectedPost.feedId);
+	}, [selectedPost?.feedId, allFeeds]);
 
 	// Check if current post is read
 	const isCurrentPostRead = React.useMemo(() => {
@@ -249,6 +256,32 @@ function Dashboard() {
 									</span>
 								</div>
 								<Separator />
+								{/* YouTube Embed - show if this is a YouTube video */}
+								{selectedPostFeed &&
+									isYouTubePost(selectedPostFeed.feedUrl) &&
+									selectedPost.link &&
+									(() => {
+										const videoId = extractYouTubeVideoId(selectedPost.link);
+										if (videoId) {
+											return (
+												<div className="w-full mb-6">
+													<div
+														className="relative w-full"
+														style={{ paddingBottom: "56.25%" }}
+													>
+														<iframe
+															className="absolute top-0 left-0 w-full h-full rounded-lg"
+															src={`https://www.youtube.com/embed/${videoId}`}
+															title={selectedPost.title}
+															allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+															allowFullScreen
+														/>
+													</div>
+												</div>
+											);
+										}
+										return null;
+									})()}
 								{selectedPost.content ? (
 									<div className="prose prose-gray dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-a:text-primary prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-blockquote:text-muted-foreground prose-li:text-foreground space-y-4">
 										<ReactMarkdown

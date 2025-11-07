@@ -135,7 +135,7 @@ function App() {
 							publishedDate: extractPostDate(post),
 							link: sanitizedPost.link,
 							feedId: result.value.id,
-							content: extractPostContent(post),
+							content: extractPostContent(post, sanitizedPost.link),
 						});
 					}
 
@@ -254,7 +254,7 @@ function App() {
 					publishedDate: extractPostDate(post),
 					link: sanitizedPost.link,
 					feedId: result.value.id,
-					content: extractPostContent(post),
+					content: extractPostContent(post, sanitizedPost.link),
 				});
 			}
 
