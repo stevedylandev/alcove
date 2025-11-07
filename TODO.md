@@ -20,7 +20,7 @@ Endless rambling of things to fix and improve
 - [x] Automatically select first feed on load
 - [x] Add initial app suspense
 - [x] Fix long blog names on mobile in nav sidebar
-- [ ] YouTube feed support
+- [x] YouTube feed support
 - [x] Detect Categories in OPML
 - [ ] CRUD categories
 - [ ] Check broken html characters in post titles
