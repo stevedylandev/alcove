@@ -25,5 +25,5 @@ Endless rambling of things to fix and improve
 - [x] CRUD categories
 - [x] Check broken html characters in post titles
 - [x] Update Author name to Blog Name in list of posts
-- [ ] Fix mobile navigation through posts
+- [x] Fix mobile navigation through posts
 - [ ] Add another relay
