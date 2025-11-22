@@ -36,6 +36,7 @@ import {
 	extractPostContent,
 	extractPostDate,
 } from "@/lib/feed-operations";
+import { formatTypeError } from "@/lib/format-error";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 	selectedFeedId?: string | null;
@@ -142,17 +143,29 @@ export function AppSidebar({
 
 			if (existingStatus) {
 				// Update existing status to read
-				evolu.update("readStatus", {
+				const updateResult = evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 1,
 				});
+				if (!updateResult.ok) {
+					console.warn(
+						"Failed to update read status:",
+						formatTypeError(updateResult.error),
+					);
+				}
 			} else if (post && post.feedId) {
 				// Create new read status
-				evolu.insert("readStatus", {
+				const insertResult = evolu.insert("readStatus", {
 					postId: postId,
 					feedId: post.feedId,
 					isRead: 1,
 				});
+				if (!insertResult.ok) {
+					console.warn(
+						"Failed to insert read status:",
+						formatTypeError(insertResult.error),
+					);
+				}
 			}
 
 			// Call the original onPostSelect
@@ -184,19 +197,23 @@ export function AppSidebar({
 
 			if (existingStatus && !existingStatus.isRead) {
 				// Update existing status to read
-				evolu.update("readStatus", {
+				const updateResult = evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 1,
 				});
-				markedCount++;
+				if (updateResult.ok) {
+					markedCount++;
+				}
 			} else if (!existingStatus && post.feedId) {
 				// Create new read status
-				evolu.insert("readStatus", {
+				const insertResult = evolu.insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
 					isRead: 1,
 				});
-				markedCount++;
+				if (insertResult.ok) {
+					markedCount++;
+				}
 			}
 		});
 		toast.success(
@@ -214,19 +231,23 @@ export function AppSidebar({
 
 			if (existingStatus && existingStatus.isRead) {
 				// Update existing status to unread
-				evolu.update("readStatus", {
+				const updateResult = evolu.update("readStatus", {
 					id: existingStatus.id as any,
 					isRead: 0,
 				});
-				unmarkedCount++;
+				if (updateResult.ok) {
+					unmarkedCount++;
+				}
 			} else if (!existingStatus && post.feedId) {
 				// Create new unread status
-				evolu.insert("readStatus", {
+				const insertResult = evolu.insert("readStatus", {
 					postId: post.id,
 					feedId: post.feedId,
 					isRead: 0,
 				});
-				unmarkedCount++;
+				if (insertResult.ok) {
+					unmarkedCount++;
+				}
 			}
 		});
 		toast.success(
@@ -408,7 +429,7 @@ export function AppSidebar({
 							continue;
 						}
 
-						evolu.insert("rssPost", {
+						const postResult = evolu.insert("rssPost", {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
 							feedTitle: feed.title,
@@ -417,16 +438,24 @@ export function AppSidebar({
 							feedId: feed.id,
 							content: extractPostContent(post, postLink),
 						});
-						newPostsCount++;
+						if (postResult.ok) {
+							newPostsCount++;
+						}
 					}
 
 					totalNewPosts += newPostsCount;
 
 					// Update feed's dateUpdated
-					evolu.update("rssFeed", {
+					const updateResult = evolu.update("rssFeed", {
 						id: feed.id as any,
 						dateUpdated: new Date().toISOString(),
 					});
+					if (!updateResult.ok) {
+						console.warn(
+							"Failed to update feed dateUpdated:",
+							formatTypeError(updateResult.error),
+						);
+					}
 				} catch (error) {
 					console.error(`Error refreshing feed "${feed.title}":`, error);
 					// Continue with other feeds even if one fails

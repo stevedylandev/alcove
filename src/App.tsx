@@ -1,6 +1,12 @@
 import Dashboard from "./components/dashboard";
 import { useQuery } from "@evolu/react";
-import { allFeedsQuery, useEvolu } from "@/lib/evolu";
+import {
+	allFeedsQuery,
+	localAuth,
+	service,
+	useEvolu,
+	ownerIds,
+} from "@/lib/evolu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import * as React from "react";
@@ -25,10 +31,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, FileUp, Info } from "lucide-react";
-import { Mnemonic } from "@evolu/common";
+import { Upload, FileUp, Info, LogIn, Key } from "lucide-react";
+import * as Evolu from "@evolu/common";
 import { LoadingScreen } from "@/components/loading-screen";
 import { AboutDialog } from "@/components/about-dialog";
+import { formatTypeError } from "@/lib/format-error";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
@@ -41,11 +48,15 @@ function App() {
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [errorMessage, setErrorMessage] = React.useState("");
 	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = React.useState(false);
+	const [isPasskeyDialogOpen, setIsPasskeyDialogOpen] = React.useState(false);
 	const [restoreMnemonic, setRestoreMnemonic] = React.useState("");
 	const [isImportingOPML, setIsImportingOPML] = React.useState(false);
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	const evolu = useEvolu();
+
+	// Filter available passkeys (if any exist)
+	const availablePasskeys = React.useMemo(() => ownerIds, []);
 
 	// Handle initial loading state
 	React.useEffect(() => {
@@ -73,11 +84,34 @@ function App() {
 
 	function handleRestore() {
 		if (restoreMnemonic.trim()) {
-			evolu.restoreAppOwner(restoreMnemonic as Mnemonic);
+			const result = Evolu.Mnemonic.from(restoreMnemonic.trim());
+			if (!result.ok) {
+				toast.error(formatTypeError(result.error));
+				return;
+			}
+
+			void evolu.restoreAppOwner(result.value);
 			setIsRestoreDialogOpen(false);
 			setRestoreMnemonic("");
 			toast.success("Account restored successfully");
 		}
+	}
+
+	async function handleLoginWithPasskey(ownerId: Evolu.OwnerId) {
+		const result = await localAuth.login(ownerId, { service });
+		if (result) {
+			evolu.reloadApp();
+		} else {
+			toast.error("Failed to login with passkey");
+		}
+	}
+
+	function openPasskeyDialog() {
+		if (availablePasskeys.length === 0) {
+			toast.error("No passkeys found on this device");
+			return;
+		}
+		setIsPasskeyDialogOpen(true);
 	}
 
 	async function handleImportOPML(file: File) {
@@ -119,7 +153,7 @@ function App() {
 					});
 
 					if (!result.ok) {
-						throw new Error("Failed to insert feed into database");
+						throw new Error(formatTypeError(result.error));
 					}
 
 					for (const post of posts) {
@@ -130,7 +164,7 @@ function App() {
 							feedData.title,
 						);
 
-						evolu.insert("rssPost", {
+						const postResult = evolu.insert("rssPost", {
 							title: sanitizedPost.title,
 							author: sanitizedPost.author || null,
 							feedTitle: sanitizedFeed.title,
@@ -139,6 +173,13 @@ function App() {
 							feedId: result.value.id,
 							content: extractPostContent(post, sanitizedPost.link),
 						});
+
+						if (!postResult.ok) {
+							console.warn(
+								"Failed to insert post:",
+								formatTypeError(postResult.error),
+							);
+						}
 					}
 
 					successCount++;
@@ -258,14 +299,14 @@ function App() {
 			});
 
 			if (!result.ok) {
-				throw new Error("Failed to insert feed");
+				throw new Error(formatTypeError(result.error));
 			}
 
 			for (const post of posts) {
 				// Sanitize post data to meet schema constraints
 				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
 
-				evolu.insert("rssPost", {
+				const postResult = evolu.insert("rssPost", {
 					title: sanitizedPost.title,
 					author: sanitizedPost.author || null,
 					feedTitle: sanitizedFeed.title,
@@ -274,6 +315,13 @@ function App() {
 					feedId: result.value.id,
 					content: extractPostContent(post, sanitizedPost.link),
 				});
+
+				if (!postResult.ok) {
+					console.warn(
+						"Failed to insert post:",
+						formatTypeError(postResult.error),
+					);
+				}
 			}
 
 			toast.success(
@@ -362,6 +410,16 @@ function App() {
 							<Upload className="h-4 w-4 mr-2" />
 							Restore from Backup
 						</Button>
+						{availablePasskeys.length > 0 && (
+							<Button
+								variant="outline"
+								onClick={openPasskeyDialog}
+								className="w-full"
+							>
+								<Key className="h-4 w-4 mr-2" />
+								Login with Passkey
+							</Button>
+						)}
 					</div>
 				</div>
 			)}
@@ -392,6 +450,38 @@ function App() {
 							<Upload className="h-4 w-4 mr-2" />
 							Restore Account
 						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={isPasskeyDialogOpen} onOpenChange={setIsPasskeyDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Login with Passkey</DialogTitle>
+						<DialogDescription>
+							Select a passkey to authenticate and access your encrypted data.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						{availablePasskeys.map(({ ownerId, username }) => (
+							<div
+								key={ownerId}
+								className="flex items-center justify-between p-3 bg-muted rounded-lg"
+							>
+								<div className="flex flex-col">
+									<span className="text-sm font-medium">{username}</span>
+									<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+										{ownerId}
+									</span>
+								</div>
+								<Button
+									size="sm"
+									onClick={() => handleLoginWithPasskey(ownerId)}
+								>
+									<LogIn className="h-3 w-3 mr-1" />
+									Login
+								</Button>
+							</div>
+						))}
 					</div>
 				</DialogContent>
 			</Dialog>

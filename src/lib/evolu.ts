@@ -1,22 +1,39 @@
-import { evoluReactWebDeps } from "@evolu/react-web";
-import { Schema, type RSSFeedId } from "./scheme.ts";
+import * as Evolu from "@evolu/common";
 import { createUseEvolu } from "@evolu/react";
-import { createEvolu, SimpleName, sqliteTrue } from "@evolu/common";
+import { evoluReactWebDeps, localAuth } from "@evolu/react-web";
+import { Schema, type RSSFeedId } from "./scheme.ts";
 
-export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
-	name: SimpleName.orThrow("alcove"),
+// Namespace for the current app (scopes databases, passkeys, etc.)
+const service = "alcove";
+
+// Get authentication profiles and initialize owner
+// This is a top-level await for simplicity - in production you may want to handle this differently
+const ownerIds = await localAuth.getProfiles({ service });
+const authResult = await localAuth.getOwner({ service });
+
+// Create Evolu instance for the React web platform
+export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
+	name: Evolu.SimpleName.orThrow(
+		`${service}-${authResult?.owner?.id ?? "guest"}`,
+	),
 	reloadUrl: "/",
+	encryptionKey: authResult?.owner?.encryptionKey,
+	externalAppOwner: authResult?.owner,
 	transports: [
-		{
-			type: "WebSocket",
-			url: "wss://relay.alcove.tools",
-		},
-		{
-			type: "WebSocket",
-			url: "wss://relay2.alcove.tools",
-		},
+		// {
+		// 	type: "WebSocket",
+		// 	url: "wss://relay.alcove.tools",
+		// },
+		// {
+		// 	type: "WebSocket",
+		// 	url: "wss://relay2.alcove.tools",
+		// },
+		{ type: "WebSocket" as const, url: "ws://localhost:4000" },
 	],
 });
+
+// Export authentication utilities and owner info
+export { localAuth, service, ownerIds, authResult };
 
 export const useEvolu = createUseEvolu(evolu);
 
@@ -34,13 +51,13 @@ export const allFeedsQuery = evolu.createQuery((db) =>
 	db
 		.selectFrom("rssFeed")
 		.selectAll()
-		.where("isDeleted", "is not", sqliteTrue)
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
 		// Filter out null titles and feedUrls (required fields)
 		.where("title", "is not", null)
 		.where("feedUrl", "is not", null)
 		.$narrowType<{
-			title: import("@evolu/common").kysely.NotNull;
-			feedUrl: import("@evolu/common").kysely.NotNull;
+			title: Evolu.kysely.NotNull;
+			feedUrl: Evolu.kysely.NotNull;
 		}>()
 		.orderBy("createdAt"),
 );
@@ -51,13 +68,13 @@ export const postsByFeedQuery = (feedId: string) =>
 			.selectFrom("rssPost")
 			.selectAll()
 			.where("feedId", "=", feedId as RSSFeedId)
-			.where("isDeleted", "is not", sqliteTrue)
+			.where("isDeleted", "is not", Evolu.sqliteTrue)
 			// Filter out null required fields
 			.where("title", "is not", null)
 			.where("link", "is not", null)
 			.$narrowType<{
-				title: import("@evolu/common").kysely.NotNull;
-				link: import("@evolu/common").kysely.NotNull;
+				title: Evolu.kysely.NotNull;
+				link: Evolu.kysely.NotNull;
 			}>()
 			.orderBy("id", "desc"),
 	);
@@ -66,13 +83,13 @@ export const allPostsQuery = evolu.createQuery((db) =>
 	db
 		.selectFrom("rssPost")
 		.selectAll()
-		.where("isDeleted", "is not", sqliteTrue)
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
 		// Filter out null required fields
 		.where("title", "is not", null)
 		.where("link", "is not", null)
 		.$narrowType<{
-			title: import("@evolu/common").kysely.NotNull;
-			link: import("@evolu/common").kysely.NotNull;
+			title: Evolu.kysely.NotNull;
+			link: Evolu.kysely.NotNull;
 		}>()
 		.orderBy("id", "desc"),
 );
@@ -81,13 +98,13 @@ export const feedsByCategoryQuery = evolu.createQuery((db) =>
 	db
 		.selectFrom("rssFeed")
 		.selectAll()
-		.where("isDeleted", "is not", sqliteTrue)
+		.where("isDeleted", "is not", Evolu.sqliteTrue)
 		// Filter out null required fields
 		.where("title", "is not", null)
 		.where("feedUrl", "is not", null)
 		.$narrowType<{
-			title: import("@evolu/common").kysely.NotNull;
-			feedUrl: import("@evolu/common").kysely.NotNull;
+			title: Evolu.kysely.NotNull;
+			feedUrl: Evolu.kysely.NotNull;
 		}>()
 		.orderBy("category", "asc"),
 );
@@ -101,5 +118,5 @@ export const allReadStatusesWithUnreadQuery = evolu.createQuery((db) =>
 );
 
 export function reset() {
-	evolu.resetAppOwner();
+	void evolu.resetAppOwner({ reload: true });
 }

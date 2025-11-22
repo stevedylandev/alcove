@@ -25,6 +25,7 @@ import {
 	isYouTubeUrl,
 	convertYouTubeUrlToFeed,
 } from "@/lib/feed-operations";
+import { formatTypeError } from "@/lib/format-error";
 
 interface AddFeedDialogProps {
 	open: boolean;
@@ -101,7 +102,7 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 			});
 
 			if (!result.ok) {
-				throw new Error("Failed to insert feed");
+				throw new Error(formatTypeError(result.error));
 			}
 
 			// Process posts/entries
@@ -109,7 +110,7 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 				// Sanitize post data to meet schema constraints
 				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
 
-				evolu.insert("rssPost", {
+				const postResult = evolu.insert("rssPost", {
 					title: sanitizedPost.title,
 					author: sanitizedPost.author || null,
 					feedTitle: sanitizedFeed.title,
@@ -118,6 +119,13 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 					feedId: result.value.id,
 					content: extractPostContent(post, sanitizedPost.link),
 				});
+
+				if (!postResult.ok) {
+					console.warn(
+						"Failed to insert post:",
+						formatTypeError(postResult.error),
+					);
+				}
 			}
 
 			toast.success(
