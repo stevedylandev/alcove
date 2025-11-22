@@ -1,24 +1,12 @@
 import * as Evolu from "@evolu/common";
 import { createUseEvolu } from "@evolu/react";
-import { evoluReactWebDeps, localAuth } from "@evolu/react-web";
+import { evoluReactWebDeps } from "@evolu/react-web";
 import { Schema, type RSSFeedId } from "./scheme.ts";
-
-// Namespace for the current app (scopes databases, passkeys, etc.)
-const service = "alcove";
-
-// Get authentication profiles and initialize owner
-// This is a top-level await for simplicity - in production you may want to handle this differently
-const ownerIds = await localAuth.getProfiles({ service });
-const authResult = await localAuth.getOwner({ service });
 
 // Create Evolu instance for the React web platform
 export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
-	name: Evolu.SimpleName.orThrow(
-		`${service}-${authResult?.owner?.id ?? "guest"}`,
-	),
+	name: Evolu.SimpleName.orThrow("alcove"),
 	reloadUrl: "/",
-	encryptionKey: authResult?.owner?.encryptionKey,
-	externalAppOwner: authResult?.owner,
 	transports: [
 		// {
 		// 	type: "WebSocket",
@@ -31,9 +19,6 @@ export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
 		{ type: "WebSocket" as const, url: "ws://localhost:4000" },
 	],
 });
-
-// Export authentication utilities and owner info
-export { localAuth, service, ownerIds, authResult };
 
 export const useEvolu = createUseEvolu(evolu);
 

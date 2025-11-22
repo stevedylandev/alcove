@@ -8,8 +8,6 @@ import {
 	Upload,
 	Download,
 	FileUp,
-	Key,
-	LogIn,
 } from "lucide-react";
 import {
 	Dialog,
@@ -20,16 +18,8 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { use, useState, useRef, useMemo } from "react";
-import {
-	useEvolu,
-	reset,
-	allFeedsQuery,
-	localAuth,
-	service,
-	ownerIds,
-	authResult,
-} from "@/lib/evolu";
+import { use, useState, useRef } from "react";
+import { useEvolu, reset, allFeedsQuery } from "@/lib/evolu";
 import { useQuery } from "@evolu/react";
 import { generateOPML, parseOPML, downloadOPML } from "@/lib/opml";
 import {
@@ -65,7 +55,6 @@ export function NavUser() {
 	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
 	const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 	const [isImportOPMLDialogOpen, setIsImportOPMLDialogOpen] = useState(false);
-	const [isPasskeyDialogOpen, setIsPasskeyDialogOpen] = useState(false);
 	const [backupPhrase, setBackupPhrase] = useState<Evolu.Mnemonic | null>();
 	const [isRevealed, setIsRevealed] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
@@ -87,65 +76,8 @@ export function NavUser() {
 	const owner = use(evolu.appOwner);
 	const feeds = useQuery(allFeedsQuery);
 
-	// Get other registered passkey profiles
-	const otherOwnerIds = useMemo(
-		() => ownerIds.filter(({ ownerId }) => ownerId !== owner?.id),
-		[owner?.id],
-	);
-
 	function backup() {
 		setBackupPhrase(owner?.mnemonic);
-	}
-
-	// Passkey registration
-	async function handleRegisterPasskey() {
-		const username = window.prompt("Enter your username for passkey:");
-		if (username == null) return;
-
-		// Determine if this is a guest login or a new owner
-		const isGuest = !Boolean(authResult?.owner);
-
-		// Register the guest owner or create a new one if already registered
-		const result = await localAuth.register(username, {
-			service: service,
-			mnemonic: isGuest ? owner?.mnemonic : undefined,
-		});
-
-		if (result) {
-			// If this is a guest owner, clear the database and reload
-			// The owner is transferred to a new database on next login
-			if (isGuest) {
-				void evolu.resetAppOwner({ reload: true });
-			} else {
-				// Otherwise, just reload the page
-				evolu.reloadApp();
-			}
-		} else {
-			alert(
-				"Failed to register passkey. Make sure your device supports passkeys.",
-			);
-		}
-	}
-
-	// Passkey login
-	async function handleLoginWithPasskey(ownerId: Evolu.OwnerId) {
-		const result = await localAuth.login(ownerId, { service });
-		if (result) {
-			evolu.reloadApp();
-		} else {
-			alert("Failed to login with passkey");
-		}
-	}
-
-	// Clear all passkeys and data
-	async function handleClearAllPasskeys() {
-		const confirmed = window.confirm(
-			"Are you sure you want to clear all passkeys and data? This cannot be undone.",
-		);
-		if (!confirmed) return;
-
-		await localAuth.clearAll({ service });
-		void evolu.resetAppOwner({ reload: true });
 	}
 
 	async function handleExportOPML() {
@@ -318,15 +250,6 @@ export function NavUser() {
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<DropdownMenuItem
-										onClick={() => setIsPasskeyDialogOpen(true)}
-									>
-										<Key />
-										Passkeys
-									</DropdownMenuItem>
-								</DropdownMenuGroup>
-								<DropdownMenuSeparator />
-								<DropdownMenuGroup>
 									<DialogTrigger asChild>
 										<DropdownMenuItem>
 											<BookKey />
@@ -472,91 +395,6 @@ export function NavUser() {
 								</p>
 							</>
 						)}
-					</div>
-				</DialogContent>
-			</Dialog>
-			<Dialog open={isPasskeyDialogOpen} onOpenChange={setIsPasskeyDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Passkey Management</DialogTitle>
-						<DialogDescription>
-							Register a passkey to securely access your account across devices
-							without entering a mnemonic. Your device's biometric
-							authentication (fingerprint, face ID, etc.) will protect your
-							data.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4">
-						{owner && (
-							<div className="p-3 bg-muted rounded-lg">
-								<p className="text-xs font-medium text-muted-foreground mb-1">
-									Current Account
-								</p>
-								<p className="text-sm font-medium">
-									{authResult?.username ?? "Guest"}
-								</p>
-								<p className="text-xs text-muted-foreground mt-1">{owner.id}</p>
-							</div>
-						)}
-
-						<div className="flex gap-2">
-							<Button
-								onClick={handleRegisterPasskey}
-								className="flex-1"
-								variant="default"
-							>
-								<Key className="h-4 w-4 mr-2" />
-								Register Passkey
-							</Button>
-							<Button
-								onClick={handleClearAllPasskeys}
-								className="flex-1"
-								variant="destructive"
-							>
-								<Trash2 className="h-4 w-4 mr-2" />
-								Clear All
-							</Button>
-						</div>
-
-						{otherOwnerIds.length > 0 && (
-							<>
-								<div className="border-t pt-4">
-									<p className="text-sm font-medium mb-3">
-										Other Registered Passkeys
-									</p>
-									<div className="space-y-2">
-										{otherOwnerIds.map(({ ownerId, username }) => (
-											<div
-												key={ownerId}
-												className="flex items-center justify-between p-3 bg-muted rounded-lg"
-											>
-												<div className="flex flex-col">
-													<span className="text-sm font-medium">
-														{username}
-													</span>
-													<span className="text-xs text-muted-foreground">
-														{ownerId}
-													</span>
-												</div>
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => handleLoginWithPasskey(ownerId)}
-												>
-													<LogIn className="h-3 w-3 mr-1" />
-													Login
-												</Button>
-											</div>
-										))}
-									</div>
-								</div>
-							</>
-						)}
-
-						<p className="text-xs text-muted-foreground">
-							💡 Passkeys use your device's secure enclave for authentication.
-							You can register multiple passkeys for different devices or users.
-						</p>
 					</div>
 				</DialogContent>
 			</Dialog>
