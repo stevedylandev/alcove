@@ -8,15 +8,15 @@ export const evolu = Evolu.createEvolu(evoluReactWebDeps)(Schema, {
 	name: Evolu.SimpleName.orThrow("alcove"),
 	reloadUrl: "/",
 	transports: [
-		// {
-		// 	type: "WebSocket",
-		// 	url: "wss://relay.alcove.tools",
-		// },
+		{
+			type: "WebSocket",
+			url: "wss://relay.alcove.tools",
+		},
 		// {
 		// 	type: "WebSocket",
 		// 	url: "wss://relay2.alcove.tools",
 		// },
-		{ type: "WebSocket" as const, url: "ws://localhost:4000" },
+		//	{ type: "WebSocket" as const, url: "ws://localhost:4000" },
 	],
 });
 
