@@ -1,6 +1,0 @@
-{
-  "siteId": "ddedcf5b-c792-4950-bf41-f96bb38372d2",
-  "domain": "alcove",
-  "buildCommand": "bun run build",
-  "buildDir": "dist"
-}
