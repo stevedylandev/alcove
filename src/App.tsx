@@ -26,9 +26,10 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Upload, FileUp, Info } from "lucide-react";
-import { Mnemonic } from "@evolu/common";
+import * as Evolu from "@evolu/common";
 import { LoadingScreen } from "@/components/loading-screen";
 import { AboutDialog } from "@/components/about-dialog";
+import { formatTypeError } from "@/lib/format-error";
 
 function App() {
 	const allFeeds = useQuery(allFeedsQuery);
@@ -73,7 +74,13 @@ function App() {
 
 	function handleRestore() {
 		if (restoreMnemonic.trim()) {
-			evolu.restoreAppOwner(restoreMnemonic as Mnemonic);
+			const result = Evolu.Mnemonic.from(restoreMnemonic.trim());
+			if (!result.ok) {
+				toast.error(formatTypeError(result.error));
+				return;
+			}
+
+			void evolu.restoreAppOwner(result.value);
 			setIsRestoreDialogOpen(false);
 			setRestoreMnemonic("");
 			toast.success("Account restored successfully");
@@ -119,7 +126,7 @@ function App() {
 					});
 
 					if (!result.ok) {
-						throw new Error("Failed to insert feed into database");
+						throw new Error(formatTypeError(result.error));
 					}
 
 					for (const post of posts) {
@@ -130,7 +137,7 @@ function App() {
 							feedData.title,
 						);
 
-						evolu.insert("rssPost", {
+						const postResult = evolu.insert("rssPost", {
 							title: sanitizedPost.title,
 							author: sanitizedPost.author || null,
 							feedTitle: sanitizedFeed.title,
@@ -139,6 +146,13 @@ function App() {
 							feedId: result.value.id,
 							content: extractPostContent(post, sanitizedPost.link),
 						});
+
+						if (!postResult.ok) {
+							console.warn(
+								"Failed to insert post:",
+								formatTypeError(postResult.error),
+							);
+						}
 					}
 
 					successCount++;
@@ -258,14 +272,14 @@ function App() {
 			});
 
 			if (!result.ok) {
-				throw new Error("Failed to insert feed");
+				throw new Error(formatTypeError(result.error));
 			}
 
 			for (const post of posts) {
 				// Sanitize post data to meet schema constraints
 				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
 
-				evolu.insert("rssPost", {
+				const postResult = evolu.insert("rssPost", {
 					title: sanitizedPost.title,
 					author: sanitizedPost.author || null,
 					feedTitle: sanitizedFeed.title,
@@ -274,6 +288,13 @@ function App() {
 					feedId: result.value.id,
 					content: extractPostContent(post, sanitizedPost.link),
 				});
+
+				if (!postResult.ok) {
+					console.warn(
+						"Failed to insert post:",
+						formatTypeError(postResult.error),
+					);
+				}
 			}
 
 			toast.success(

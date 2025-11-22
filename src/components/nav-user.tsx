@@ -45,8 +45,9 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { Mnemonic } from "@evolu/common";
+import * as Evolu from "@evolu/common";
 import { AboutDialog } from "@/components/about-dialog";
+import { formatTypeError } from "@/lib/format-error";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
@@ -54,7 +55,7 @@ export function NavUser() {
 	const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
 	const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 	const [isImportOPMLDialogOpen, setIsImportOPMLDialogOpen] = useState(false);
-	const [backupPhrase, setBackupPhrase] = useState<Mnemonic | null>();
+	const [backupPhrase, setBackupPhrase] = useState<Evolu.Mnemonic | null>();
 	const [isRevealed, setIsRevealed] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
 	const [restoreMnemonic, setRestoreMnemonic] = useState("");
@@ -76,7 +77,7 @@ export function NavUser() {
 	const feeds = useQuery(allFeedsQuery);
 
 	function backup() {
-		setBackupPhrase(owner.mnemonic);
+		setBackupPhrase(owner?.mnemonic);
 	}
 
 	async function handleExportOPML() {
@@ -130,7 +131,7 @@ export function NavUser() {
 
 					for (const post of posts) {
 						const postLink = extractPostLink(post, isAtom);
-						evolu.insert("rssPost", {
+						const postResult = evolu.insert("rssPost", {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
 							feedTitle: feed.title,
@@ -139,6 +140,12 @@ export function NavUser() {
 							feedId: result.value.id,
 							content: extractPostContent(post, postLink),
 						});
+						if (!postResult.ok) {
+							console.warn(
+								"Failed to insert post:",
+								formatTypeError(postResult.error),
+							);
+						}
 					}
 
 					successCount++;
@@ -201,7 +208,13 @@ export function NavUser() {
 
 	function handleRestore() {
 		if (restoreMnemonic.trim()) {
-			evolu.restoreAppOwner(restoreMnemonic as Mnemonic);
+			const result = Evolu.Mnemonic.from(restoreMnemonic.trim());
+			if (!result.ok) {
+				alert(formatTypeError(result.error));
+				return;
+			}
+
+			void evolu.restoreAppOwner(result.value);
 			setIsRestoreDialogOpen(false);
 			setRestoreMnemonic("");
 		}

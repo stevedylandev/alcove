@@ -1,56 +1,46 @@
-import {
-	id,
-	maxLength,
-	NonEmptyString,
-	NonEmptyString1000,
-	nullOr,
-	Number,
-} from "@evolu/common";
+import * as Evolu from "@evolu/common";
 
 // RSS Feed ID
-const RSSFeedId = id("RSSFeed");
+const RSSFeedId = Evolu.id("RSSFeed");
 export type RSSFeedId = typeof RSSFeedId.Type;
 
 // RSS Post ID
-const RSSPostId = id("RSSPost");
+const RSSPostId = Evolu.id("RSSPost");
 export type RSSPostId = typeof RSSPostId.Type;
 
 // Custom branded types for string length constraints
-const NonEmptyString50 = maxLength(50)(NonEmptyString);
-type NonEmptyString50 = typeof NonEmptyString50.Type;
-
-const NonEmptyString200 = maxLength(200)(NonEmptyString);
-type NonEmptyString200 = typeof NonEmptyString200.Type;
+const NonEmptyString50 = Evolu.maxLength(50)(Evolu.NonEmptyString);
+const NonEmptyString200 = Evolu.maxLength(200)(Evolu.NonEmptyString);
 
 export const Schema = {
 	rssFeed: {
 		id: RSSFeedId,
-		feedUrl: NonEmptyString1000,
+		feedUrl: Evolu.NonEmptyString1000,
 		title: NonEmptyString200,
-		description: nullOr(NonEmptyString1000),
-		category: nullOr(NonEmptyString50),
-		dateUpdated: nullOr(NonEmptyString),
+		description: Evolu.nullOr(Evolu.NonEmptyString1000),
+		category: Evolu.nullOr(NonEmptyString50),
+		dateUpdated: Evolu.nullOr(Evolu.NonEmptyString),
 	},
 	rssPost: {
 		id: RSSPostId,
 		feedId: RSSFeedId,
-		title: NonEmptyString1000,
-		link: NonEmptyString1000,
-		content: nullOr(NonEmptyString),
-		author: nullOr(NonEmptyString200),
-		feedTitle: nullOr(NonEmptyString200),
-		publishedDate: nullOr(NonEmptyString),
+		title: Evolu.NonEmptyString1000,
+		link: Evolu.NonEmptyString1000,
+		content: Evolu.nullOr(Evolu.NonEmptyString),
+		author: Evolu.nullOr(NonEmptyString200),
+		feedTitle: Evolu.nullOr(NonEmptyString200),
+		publishedDate: Evolu.nullOr(Evolu.NonEmptyString),
 	},
 	readStatus: {
-		id: id("ReadStatus"),
+		id: Evolu.id("ReadStatus"),
 		feedId: RSSFeedId,
 		postId: RSSPostId,
-		isRead: nullOr(Number), // 0 for false, 1 for true
+		isRead: Evolu.nullOr(Evolu.Number), // 0 for false, 1 for true
 	},
 	userPreferences: {
-		id: id("UserPreferences"),
-		theme: nullOr(NonEmptyString50), // Will store "light" or "dark"
-		refreshInterval: nullOr(NonEmptyString50), // Will store number as string
-		postsPerPage: nullOr(NonEmptyString50), // Will store number as string
+		id: Evolu.id("UserPreferences"),
+		theme: Evolu.nullOr(NonEmptyString50), // Will store "light" or "dark"
+		refreshInterval: Evolu.nullOr(NonEmptyString50), // Will store number as string
+		postsPerPage: Evolu.nullOr(NonEmptyString50), // Will store number as string
 	},
 };
