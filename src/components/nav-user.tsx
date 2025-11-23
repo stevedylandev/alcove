@@ -48,6 +48,7 @@ import {
 import * as Evolu from "@evolu/common";
 import { AboutDialog } from "@/components/about-dialog";
 import { formatTypeError } from "@/lib/format-error";
+import { Input } from "./ui/input";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
@@ -343,8 +344,9 @@ export function NavUser() {
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4">
-						<textarea
-							className="w-full p-4 bg-muted rounded-lg font-mono text-sm resize-none min-h-[100px]"
+						<Input
+							type="password"
+							className="w-full p-4 bg-muted rounded-lg font-mono text-sm resize-none"
 							placeholder="Enter your backup phrase here..."
 							value={restoreMnemonic}
 							onChange={(e) => setRestoreMnemonic(e.target.value)}
