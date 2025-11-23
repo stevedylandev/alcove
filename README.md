@@ -14,7 +14,7 @@ Alcove is built on two principles: **privacy** and **freedom of speech**.
 
 Those two things are becoming harder to find these days, yet blogs and RSS feeds provide a way out. As long as someone is publishing and someone else is listening, these two fundamentals can help keep free speech alive.
 
-Alcove accomplishes privacy through a "can't be evil" tech stack, which you can read more about [here](). **TLDR:** All of your feeds and posts that you read are encrypted locally and synced via cryptographic keypairs. Even if we wanted to read your stuff, we can't. We believe this is important as many other RSS readers cannot make the same promise and would have to hand over the data if ordered by authorities.
+Alcove accomplishes privacy through a "can't be evil" tech stack, which you can read more about [here](https://stevedylan.dev/posts/introducing-alcove/). **TLDR:** All of your feeds and posts that you read are encrypted locally and synced via cryptographic keypairs. Even if we wanted to read your stuff, we can't. We believe this is important as many other RSS readers cannot make the same promise and would have to hand over the data if ordered by authorities.
 
 ## Tech Stack
 

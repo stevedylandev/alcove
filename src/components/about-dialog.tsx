@@ -32,7 +32,12 @@ export function AboutDialog({
 						and someone else is listening, these two fundamentals can help keep
 						free speech alive. Alcove accomplishes privacy through a "can't be
 						evil" tech stack, which you can read more about{" "}
-						<a className="underline" target="_blank" rel="noreferrer" href="">
+						<a
+							className="underline"
+							target="_blank"
+							rel="noreferrer"
+							href="https://stevedylan.dev/posts/introducing-alcove/"
+						>
 							here
 						</a>
 						. TLDR: all of your feeds and posts that you read are encrypted
