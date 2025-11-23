@@ -7,7 +7,10 @@
 		"dev": "vite",
 		"build": "tsc -b && vite build",
 		"lint": "eslint .",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"deploy:orbiter": "orbiter deploy",
+		"deploy:ens": "bun run build && omnipin deploy --ens alcovetools.eth",
+		"deploy": "bun run deploy:orbiter && bun run deploy:ens"
 	},
 	"author": "Steve Simkins",
 	"description": "Privacy centered RSS ready",
