@@ -9,7 +9,6 @@ import {
 	fetchFeedWithFallback,
 	parseFeedXml,
 	discoverFeed,
-	looksLikeFeedUrl,
 	extractPostContent,
 	extractPostDate,
 	sanitizeFeedData,
@@ -240,22 +239,31 @@ function App() {
 
 				feedUrl = youtubeFeedUrl;
 				xmlData = await fetchFeedWithFallback(feedUrl);
-			} else if (!looksLikeFeedUrl(urlInput)) {
-				setErrorMessage("Discovering RSS feed...");
-				const discovered = await discoverFeed(urlInput);
-
-				if (!discovered) {
-					setErrorMessage(
-						"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
-					);
-					setIsAddingFeed(false);
-					return;
-				}
-
-				feedUrl = discovered.feedUrl;
-				xmlData = discovered.xmlData;
 			} else {
-				xmlData = await fetchFeedWithFallback(feedUrl);
+				// First, try to fetch the URL directly as a feed
+				setErrorMessage("Checking URL...");
+				try {
+					xmlData = await fetchFeedWithFallback(urlInput);
+					// Try to parse it to see if it's a valid feed
+					parseFeedXml(xmlData);
+					// If parsing succeeds, it's a valid feed
+					feedUrl = urlInput;
+				} catch {
+					// If direct fetch/parse fails, try feed discovery
+					setErrorMessage("Discovering RSS feed...");
+					const discovered = await discoverFeed(urlInput);
+
+					if (!discovered) {
+						setErrorMessage(
+							"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
+						);
+						setIsAddingFeed(false);
+						return;
+					}
+
+					feedUrl = discovered.feedUrl;
+					xmlData = discovered.xmlData;
+				}
 			}
 
 			const { feedData, posts, isAtom } = parseFeedXml(xmlData);

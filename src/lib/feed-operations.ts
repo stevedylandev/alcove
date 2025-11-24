@@ -193,18 +193,6 @@ export async function discoverFeed(websiteUrl: string): Promise<{
 }
 
 /**
- * Checks if a URL looks like a direct feed URL
- */
-export function looksLikeFeedUrl(url: string): boolean {
-	return (
-		url.includes("/feed") ||
-		url.includes("/rss") ||
-		url.includes(".xml") ||
-		url.includes("/atom")
-	);
-}
-
-/**
  * Extracts YouTube channel ID from various YouTube URL formats
  * Supports:
  * - https://www.youtube.com/@ChannelHandle

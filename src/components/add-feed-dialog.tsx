@@ -17,7 +17,6 @@ import {
 	fetchFeedWithFallback,
 	parseFeedXml,
 	discoverFeed,
-	looksLikeFeedUrl,
 	extractPostContent,
 	extractPostDate,
 	sanitizeFeedData,
@@ -50,7 +49,6 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 		setStatusMessage("");
 
 		try {
-			// Try to discover feeds if the URL doesn't look like a direct feed URL
 			let feedUrl = urlInput;
 			let xmlData: string | null = null;
 
@@ -69,23 +67,31 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 
 				feedUrl = youtubeFeedUrl;
 				xmlData = await fetchFeedWithFallback(feedUrl);
-			} else if (!looksLikeFeedUrl(urlInput)) {
-				setStatusMessage("Discovering RSS feed...");
-				const discovered = await discoverFeed(urlInput);
-
-				if (!discovered) {
-					setStatusMessage(
-						"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
-					);
-					setIsAddingFeed(false);
-					return;
-				}
-
-				feedUrl = discovered.feedUrl;
-				xmlData = discovered.xmlData;
 			} else {
-				// Direct feed URL - try to fetch it
-				xmlData = await fetchFeedWithFallback(feedUrl);
+				// First, try to fetch the URL directly as a feed
+				setStatusMessage("Checking URL...");
+				try {
+					xmlData = await fetchFeedWithFallback(urlInput);
+					// Try to parse it to see if it's a valid feed
+					parseFeedXml(xmlData);
+					// If parsing succeeds, it's a valid feed
+					feedUrl = urlInput;
+				} catch {
+					// If direct fetch/parse fails, try feed discovery
+					setStatusMessage("Discovering RSS feed...");
+					const discovered = await discoverFeed(urlInput);
+
+					if (!discovered) {
+						setStatusMessage(
+							"Could not find an RSS feed at this URL. Please enter a direct feed URL.",
+						);
+						setIsAddingFeed(false);
+						return;
+					}
+
+					feedUrl = discovered.feedUrl;
+					xmlData = discovered.xmlData;
+				}
 			}
 
 			const { feedData, posts, isAtom } = parseFeedXml(xmlData);
