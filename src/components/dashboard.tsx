@@ -341,6 +341,7 @@ function Dashboard() {
 								{selectedPost.content ? (
 									<div className="prose prose-gray dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-a:text-primary prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-blockquote:text-muted-foreground prose-li:text-foreground space-y-4">
 										<ReactMarkdown
+											key={selectedPost.id}
 											remarkPlugins={[remarkGfm]}
 											rehypePlugins={[rehypeRaw, rehypeSanitize]}
 											components={markdownComponents}
