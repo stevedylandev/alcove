@@ -4,9 +4,7 @@
 
 A privacy focused RSS reader for the open web
 
-> [!WARNING]
-> Project is still under beta
-> Try it out at [beta.alcove.tools](https://beta.alcove.tools)
+[alcove.tools](https://alcove.tools)
 
 ## Reasoning
 
