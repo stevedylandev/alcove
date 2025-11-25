@@ -71,11 +71,23 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 				// First, try to fetch the URL directly as a feed
 				setStatusMessage("Checking URL...");
 				try {
-					xmlData = await fetchFeedWithFallback(urlInput);
-					// Try to parse it to see if it's a valid feed
-					parseFeedXml(xmlData);
-					// If parsing succeeds, it's a valid feed
-					feedUrl = urlInput;
+					if (urlInput.includes("substack.com")) {
+						const parts = urlInput.split("/");
+						console.log(parts);
+						const newUrl = `https://${parts[3].slice(1)}.${parts[2]}/feed`;
+						console.log(newUrl);
+						xmlData = await fetchFeedWithFallback(newUrl);
+						// Try to parse it to see if it's a valid feed
+						parseFeedXml(xmlData);
+						// If parsing succeeds, it's a valid feed
+						feedUrl = urlInput;
+					} else {
+						xmlData = await fetchFeedWithFallback(urlInput);
+						// Try to parse it to see if it's a valid feed
+						parseFeedXml(xmlData);
+						// If parsing succeeds, it's a valid feed
+						feedUrl = urlInput;
+					}
 				} catch {
 					// If direct fetch/parse fails, try feed discovery
 					setStatusMessage("Discovering RSS feed...");
