@@ -20,6 +20,7 @@ import { useQuery } from "@evolu/react";
 import {
 	allFeedsQuery,
 	allPostsQuery,
+	postsByFeedQuery,
 	allReadStatusesQuery,
 	allReadStatusesWithUnreadQuery,
 	useEvolu,
@@ -40,9 +41,18 @@ function Dashboard() {
 	const evolu = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
 	const allPosts = useQuery(allPostsQuery);
+	const feedPostsQuery = useQuery(postsByFeedQuery(selectedFeedId || ""));
 	const allReadStatuses = useQuery(allReadStatusesQuery);
 	const allReadStatusesWithUnread = useQuery(allReadStatusesWithUnreadQuery);
 	console.log(allPosts);
+
+	// Check if a post is read
+	const isPostRead = React.useCallback(
+		(postId: string) => {
+			return allReadStatuses.some((status) => status.postId === postId);
+		},
+		[allReadStatuses],
+	);
 
 	// Get the first post (most recent) to use as default
 	const firstPostId = React.useMemo(() => {
@@ -77,12 +87,22 @@ function Dashboard() {
 
 	// Get sorted posts for navigation
 	const sortedPosts = React.useMemo(() => {
-		return [...allPosts].sort((a, b) => {
+		// Filter posts based on selected feed
+		let postsToSort = allPosts;
+		if (selectedFeedId === "unread") {
+			// Show only unread posts from all feeds
+			postsToSort = allPosts.filter((post) => !isPostRead(post.id));
+		} else if (selectedFeedId) {
+			// Show posts from specific feed
+			postsToSort = feedPostsQuery;
+		}
+		// Sort by published date (most recent first)
+		return [...postsToSort].sort((a, b) => {
 			if (!a.publishedDate) return 1;
 			if (!b.publishedDate) return -1;
 			return b.publishedDate.localeCompare(a.publishedDate);
 		});
-	}, [allPosts]);
+	}, [allPosts, selectedFeedId, feedPostsQuery, isPostRead]);
 
 	// Get current post index and navigation info
 	const currentPostIndex = React.useMemo(() => {
@@ -146,6 +166,54 @@ function Dashboard() {
 			mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	}, [selectedPostId]);
+
+	// Mark post as read when selected
+	React.useEffect(() => {
+		if (!selectedPostId || !selectedPost) return;
+
+		const existingStatus = allReadStatusesWithUnread.find(
+			(status) => status.postId === selectedPostId,
+		);
+
+		if (existingStatus && existingStatus.isRead === 0) {
+			// Update existing status to read
+			evolu.update("readStatus", {
+				id: existingStatus.id as any,
+				isRead: 1,
+			});
+		} else if (!existingStatus && selectedPost.feedId) {
+			// Create new read status
+			evolu.insert("readStatus", {
+				postId: selectedPostId,
+				feedId: selectedPost.feedId,
+				isRead: 1,
+			});
+		}
+	}, [selectedPostId, selectedPost, allReadStatusesWithUnread, evolu]);
+
+	// Keyboard navigation for posts
+	React.useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Only handle arrow keys if not typing in an input/textarea
+			if (
+				e.target instanceof HTMLInputElement ||
+				e.target instanceof HTMLTextAreaElement
+			) {
+				return;
+			}
+
+			if (e.key === "ArrowUp") {
+				e.preventDefault();
+				goToPreviousPost();
+			} else if (e.key === "ArrowDown") {
+				e.preventDefault();
+				goToNextPost();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [goToPreviousPost, goToNextPost]);
 
 	// Get base URL from the post link to fix relative image paths
 	const getBaseUrl = React.useCallback((link: string | null) => {
