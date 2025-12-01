@@ -132,7 +132,7 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 					title: sanitizedPost.title,
 					author: sanitizedPost.author || null,
 					feedTitle: sanitizedFeed.title,
-					publishedDate: extractPostDate(post),
+					publishedDate: extractPostDate(post, isAtom),
 					link: sanitizedPost.link,
 					feedId: result.value.id,
 					content: extractPostContent(post, sanitizedPost.link),

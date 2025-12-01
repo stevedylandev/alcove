@@ -433,7 +433,7 @@ export function AppSidebar({
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
 							feedTitle: feed.title,
-							publishedDate: extractPostDate(post),
+							publishedDate: extractPostDate(post, isAtom),
 							link: postLink,
 							feedId: feed.id,
 							content: extractPostContent(post, postLink),

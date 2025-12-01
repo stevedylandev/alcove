@@ -136,7 +136,7 @@ export function NavUser() {
 							title: post.title,
 							author: extractPostAuthor(post, isAtom, feedData.title),
 							feedTitle: feed.title,
-							publishedDate: extractPostDate(post),
+							publishedDate: extractPostDate(post, isAtom),
 							link: postLink,
 							feedId: result.value.id,
 							content: extractPostContent(post, postLink),

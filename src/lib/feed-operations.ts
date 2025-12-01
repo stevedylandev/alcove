@@ -438,9 +438,18 @@ export function extractPostContent(post: any, postLink?: string): string {
 /**
  * Extracts published date from RSS or Atom post entry
  */
-export function extractPostDate(post: any): string {
+export function extractPostDate(post: any, isAtom?: boolean): string {
 	try {
-		const dateValue = post.pubDate || post.updated || post.published;
+		let dateValue: any;
+		
+		if (isAtom) {
+			// For Atom feeds, prioritize published date over updated date
+			dateValue = post.published || post.updated;
+		} else {
+			// For RSS feeds, use pubDate first, then fall back to Atom fields
+			dateValue = post.pubDate || post.published || post.updated;
+		}
+		
 		if (!dateValue) {
 			return new Date().toISOString(); // Use current date if no date found
 		}
