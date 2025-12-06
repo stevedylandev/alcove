@@ -505,7 +505,11 @@ export function AppSidebar({
 
 	return (
 		<>
-			<AddFeedDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+			<AddFeedDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				existingCategories={existingCategories}
+			/>
 			<CategoryEditDialog
 				open={categoryEditDialogOpen}
 				onOpenChange={setCategoryEditDialogOpen}
