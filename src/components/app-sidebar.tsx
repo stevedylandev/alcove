@@ -43,6 +43,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 	onFeedSelect?: (feedId: string | null) => void;
 	selectedPostId?: string | null;
 	onPostSelect?: (postId: string) => void;
+	onBulkStatusChange?: () => void;
 }
 
 export function AppSidebar({
@@ -50,6 +51,7 @@ export function AppSidebar({
 	onFeedSelect = () => {},
 	selectedPostId = null,
 	onPostSelect = () => {},
+	onBulkStatusChange = () => {},
 	...props
 }: AppSidebarProps) {
 	const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -189,6 +191,7 @@ export function AppSidebar({
 
 	// Mark all visible posts as read
 	const handleMarkAllAsRead = React.useCallback(() => {
+		onBulkStatusChange();
 		let markedCount = 0;
 		filteredPosts.forEach((post) => {
 			const existingStatus = allReadStatusesWithUnread.find(
@@ -219,10 +222,11 @@ export function AppSidebar({
 		toast.success(
 			`Marked ${markedCount} post${markedCount !== 1 ? "s" : ""} as read`,
 		);
-	}, [filteredPosts, allReadStatusesWithUnread, evolu]);
+	}, [filteredPosts, allReadStatusesWithUnread, evolu, onBulkStatusChange]);
 
 	// Mark all visible posts as unread
 	const handleMarkAllAsUnread = React.useCallback(() => {
+		onBulkStatusChange();
 		let unmarkedCount = 0;
 		filteredPosts.forEach((post) => {
 			const existingStatus = allReadStatusesWithUnread.find(
@@ -253,7 +257,7 @@ export function AppSidebar({
 		toast.success(
 			`Marked ${unmarkedCount} post${unmarkedCount !== 1 ? "s" : ""} as unread`,
 		);
-	}, [filteredPosts, allReadStatusesWithUnread, evolu]);
+	}, [filteredPosts, allReadStatusesWithUnread, evolu, onBulkStatusChange]);
 
 	// Delete feed (soft delete using isDeleted flag)
 	const handleDeleteFeed = React.useCallback(() => {
