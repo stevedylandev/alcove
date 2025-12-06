@@ -11,6 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEvolu } from "@/lib/evolu";
 import {
@@ -29,15 +36,32 @@ import { formatTypeError } from "@/lib/format-error";
 interface AddFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	existingCategories: string[];
 }
 
-export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
+export function AddFeedDialog({
+	open,
+	onOpenChange,
+	existingCategories,
+}: AddFeedDialogProps) {
 	const [urlInput, setUrlInput] = React.useState("");
-	const [categoryInput, setCategoryInput] = React.useState("");
+	const [mode, setMode] = React.useState<"existing" | "new">("existing");
+	const [selectedCategory, setSelectedCategory] = React.useState<string>("");
+	const [newCategory, setNewCategory] = React.useState("");
 	const [isAddingFeed, setIsAddingFeed] = React.useState(false);
 	const [statusMessage, setStatusMessage] = React.useState("");
 
 	const evolu = useEvolu();
+
+	React.useEffect(() => {
+		if (open) {
+			setUrlInput("");
+			setMode("existing");
+			setSelectedCategory("");
+			setNewCategory("");
+			setStatusMessage("");
+		}
+	}, [open]);
 
 	async function addFeed() {
 		if (!urlInput.trim()) {
@@ -111,11 +135,21 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 			// Sanitize feed data to meet schema constraints
 			const sanitizedFeed = sanitizeFeedData(feedData);
 
+			// Determine the final category value
+			let finalCategory: string | null = null;
+			if (mode === "new") {
+				finalCategory = newCategory.trim() || null;
+			} else {
+				if (selectedCategory && selectedCategory !== "uncategorized") {
+					finalCategory = selectedCategory;
+				}
+			}
+
 			const result = evolu.insert("rssFeed", {
 				feedUrl: feedUrl,
 				title: sanitizedFeed.title,
 				description: sanitizedFeed.description || null,
-				category: categoryInput || "Uncategorized",
+				category: finalCategory as any,
 				dateUpdated: new Date().toISOString(),
 			});
 
@@ -150,9 +184,6 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 				`Successfully added "${feedData.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
 			);
 
-			setUrlInput("");
-			setCategoryInput("");
-			setStatusMessage("");
 			onOpenChange(false);
 		} catch (error) {
 			setStatusMessage(
@@ -189,17 +220,66 @@ export function AddFeedDialog({ open, onOpenChange }: AddFeedDialogProps) {
 							We'll automatically discover the RSS feed for you
 						</p>
 					</div>
+
 					<div className="grid gap-3">
-						<Label htmlFor="category-input">Category</Label>
-						<Input
-							id="category-input"
-							name="category"
-							value={categoryInput}
-							onChange={(e) => setCategoryInput(e.target.value)}
-							placeholder="e.g., Tech, News, Blogs"
-							disabled={isAddingFeed}
-						/>
+						<Label>Category</Label>
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								variant={mode === "existing" ? "default" : "outline"}
+								onClick={() => setMode("existing")}
+								className="flex-1"
+								disabled={isAddingFeed}
+							>
+								Existing
+							</Button>
+							<Button
+								type="button"
+								variant={mode === "new" ? "default" : "outline"}
+								onClick={() => setMode("new")}
+								className="flex-1"
+								disabled={isAddingFeed}
+							>
+								New
+							</Button>
+						</div>
 					</div>
+
+					{mode === "existing" ? (
+						<div className="grid gap-2">
+							<Label htmlFor="category-select">Select Category</Label>
+							<Select
+								value={selectedCategory}
+								onValueChange={setSelectedCategory}
+								disabled={isAddingFeed}
+							>
+								<SelectTrigger id="category-select">
+									<SelectValue placeholder="Select a category" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="uncategorized">Uncategorized</SelectItem>
+									{existingCategories.map((cat) => (
+										<SelectItem key={cat} value={cat}>
+											{cat}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					) : (
+						<div className="grid gap-2">
+							<Label htmlFor="new-category">New Category Name</Label>
+							<Input
+								id="new-category"
+								value={newCategory}
+								onChange={(e) => setNewCategory(e.target.value)}
+								placeholder="Enter category name"
+								maxLength={50}
+								disabled={isAddingFeed}
+							/>
+						</div>
+					)}
+
 					{statusMessage && (
 						<div className="text-sm text-primary">{statusMessage}</div>
 					)}
