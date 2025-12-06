@@ -37,6 +37,9 @@ function Dashboard() {
 		null,
 	);
 	const mainContentRef = React.useRef<HTMLDivElement>(null);
+	const hasUserInteracted = React.useRef(false);
+	const manualToggleTimestamp = React.useRef<number>(0);
+	const lastAutoReadPostId = React.useRef<string | null>(null);
 
 	const evolu = useEvolu();
 	const allFeeds = useQuery(allFeedsQuery);
@@ -70,6 +73,7 @@ function Dashboard() {
 	const [selectedPostId, setSelectedPostId] = React.useState<string | null>(
 		firstPostId,
 	);
+	const initialPostId = React.useRef(firstPostId);
 
 	const selectedFeed = selectedFeedId
 		? allFeeds.find((f) => f.id === selectedFeedId)
@@ -137,6 +141,14 @@ function Dashboard() {
 	const toggleReadStatus = React.useCallback(() => {
 		if (!selectedPostId || !selectedPost) return;
 
+		// Record timestamp of manual toggle to prevent auto-read from overriding
+		manualToggleTimestamp.current = Date.now();
+
+		// Reset the auto-read tracking so if user marks as unread, it won't auto-mark again
+		if (lastAutoReadPostId.current === selectedPostId) {
+			lastAutoReadPostId.current = null;
+		}
+
 		const existingStatus = allReadStatusesWithUnread.find(
 			(status) => status.postId === selectedPostId,
 		);
@@ -167,28 +179,67 @@ function Dashboard() {
 		}
 	}, [selectedPostId]);
 
-	// Mark post as read when selected
+	// Mark post as read when selected (with debounce to allow arrow key navigation)
 	React.useEffect(() => {
 		if (!selectedPostId || !selectedPost) return;
 
-		const existingStatus = allReadStatusesWithUnread.find(
-			(status) => status.postId === selectedPostId,
-		);
-
-		if (existingStatus && existingStatus.isRead === 0) {
-			// Update existing status to read
-			evolu.update("readStatus", {
-				id: existingStatus.id as any,
-				isRead: 1,
-			});
-		} else if (!existingStatus && selectedPost.feedId) {
-			// Create new read status
-			evolu.insert("readStatus", {
-				postId: selectedPostId,
-				feedId: selectedPost.feedId,
-				isRead: 1,
-			});
+		// Don't auto-mark the initial post that was selected on mount
+		// This allows users to mark the first post as unread without it auto-marking as read
+		if (
+			selectedPostId === initialPostId.current &&
+			!hasUserInteracted.current
+		) {
+			hasUserInteracted.current = true;
+			return;
 		}
+
+		// Don't even start the timeout if user manually toggled recently
+		// This prevents the effect from marking posts as read after bulk operations
+		const timeSinceManualToggle = Date.now() - manualToggleTimestamp.current;
+		if (timeSinceManualToggle < 3000) {
+			return;
+		}
+
+		// Don't auto-mark if we already processed this post
+		// This prevents duplicate auto-reads when dependencies update
+		if (lastAutoReadPostId.current === selectedPostId) {
+			return;
+		}
+
+		// Debounce the auto-mark as read by 1.5 seconds
+		// This allows users to navigate with arrow keys without marking everything as read
+		const timeoutId = setTimeout(() => {
+			// Double-check timestamp hasn't changed during the delay
+			// This catches bulk operations that happen during the delay period
+			const timeSinceManualToggle = Date.now() - manualToggleTimestamp.current;
+			if (timeSinceManualToggle < 3000) {
+				return;
+			}
+
+			const existingStatus = allReadStatusesWithUnread.find(
+				(status) => status.postId === selectedPostId,
+			);
+
+			if (existingStatus && existingStatus.isRead === 0) {
+				// Update existing status to read
+				evolu.update("readStatus", {
+					id: existingStatus.id as any,
+					isRead: 1,
+				});
+				lastAutoReadPostId.current = selectedPostId;
+			} else if (!existingStatus && selectedPost.feedId) {
+				// Create new read status
+				evolu.insert("readStatus", {
+					postId: selectedPostId,
+					feedId: selectedPost.feedId,
+					isRead: 1,
+				});
+				lastAutoReadPostId.current = selectedPostId;
+			}
+		}, 1500); // 1.5 second delay
+
+		// Cleanup timeout if user navigates away before the delay
+		return () => clearTimeout(timeoutId);
 	}, [selectedPostId, selectedPost, allReadStatusesWithUnread, evolu]);
 
 	// Keyboard navigation for posts
@@ -261,6 +312,9 @@ function Dashboard() {
 					onFeedSelect={setSelectedFeedId}
 					selectedPostId={selectedPostId}
 					onPostSelect={setSelectedPostId}
+					onBulkStatusChange={() => {
+						manualToggleTimestamp.current = Date.now();
+					}}
 				/>
 				<SidebarInset className="flex flex-col h-screen overflow-hidden">
 					<header className="bg-background flex shrink-0 items-center gap-2 border-b p-4">
