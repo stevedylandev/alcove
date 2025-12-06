@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
+		"format": "biome format --write",
 		"lint": "eslint .",
 		"preview": "vite preview",
 		"deploy:orbiter": "orbiter deploy",
@@ -62,6 +63,7 @@
 		"tailwindcss": "^4.1.17"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.3.8",
 		"@eslint/js": "^9.39.1",
 		"@types/node": "^24.10.1",
 		"@types/react": "^19.2.6",
