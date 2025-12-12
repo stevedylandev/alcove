@@ -181,7 +181,7 @@ export function AddFeedDialog({
 			}
 
 			toast.success(
-				`Successfully added "${feedData.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
+				`Successfully added "${sanitizedFeed.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
 			);
 
 			onOpenChange(false);
