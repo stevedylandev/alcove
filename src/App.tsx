@@ -133,7 +133,7 @@ function App() {
 						const sanitizedPost = sanitizePostData(
 							post,
 							isAtom,
-							feedData.title,
+							sanitizedFeed.title,
 						);
 
 						const postResult = evolu.insert("rssPost", {
@@ -297,7 +297,7 @@ function App() {
 
 			for (const post of posts) {
 				// Sanitize post data to meet schema constraints
-				const sanitizedPost = sanitizePostData(post, isAtom, feedData.title);
+				const sanitizedPost = sanitizePostData(post, isAtom, sanitizedFeed.title);
 
 				const postResult = evolu.insert("rssPost", {
 					title: sanitizedPost.title,
@@ -318,7 +318,7 @@ function App() {
 			}
 
 			toast.success(
-				`Successfully added "${feedData.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
+				`Successfully added "${sanitizedFeed.title}" with ${posts.length} post${posts.length !== 1 ? "s" : ""}`,
 			);
 
 			setUrlInput("");
