@@ -436,6 +436,35 @@ export function extractPostContent(post: any, postLink?: string): string {
 }
 
 /**
+ * Normalizes date strings to handle problematic formats like "24:00:00"
+ * which causes errors in WebKit browsers
+ */
+function normalizeDateString(dateString: string): string {
+	if (!dateString || typeof dateString !== 'string') return dateString;
+	
+	// Handle the 24:00:00 time format by converting it to 00:00:00 of the next day
+	if (dateString.includes('24:00:00')) {
+		// Replace 24:00:00 with 00:00:00
+		const normalizedDate = dateString.replace(/24:00:00/, '00:00:00');
+		
+		try {
+			// Parse the normalized date and add one day
+			const tempDate = new Date(normalizedDate);
+			if (!isNaN(tempDate.getTime())) {
+				tempDate.setDate(tempDate.getDate() + 1);
+				return tempDate.toISOString();
+			}
+		} catch {
+			// If parsing fails, continue with the original string replacement
+		}
+		
+		return normalizedDate;
+	}
+	
+	return dateString;
+}
+
+/**
  * Extracts published date from RSS or Atom post entry
  */
 export function extractPostDate(post: any, isAtom?: boolean): string {
@@ -453,7 +482,11 @@ export function extractPostDate(post: any, isAtom?: boolean): string {
 		if (!dateValue) {
 			return new Date().toISOString(); // Use current date if no date found
 		}
-		const parsedDate = new Date(dateValue);
+		
+		// Normalize the date string to handle problematic formats
+		const normalizedDateValue = normalizeDateString(String(dateValue));
+		
+		const parsedDate = new Date(normalizedDateValue);
 		// Check if date is valid
 		if (isNaN(parsedDate.getTime())) {
 			return new Date().toISOString();
